@@ -1,0 +1,42 @@
+@keyframes fadeInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(25px); /* Etwas weniger Distanz */
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Utility Klasse für das Erscheinen von Listenelementen (JS kann Delay setzen) */
+.list-item-appear {
+  opacity: 0; /* Startet unsichtbar */
+  animation: slideInFromLeft 0.5s var(--transition-timing) forwards;
+}
+
+/* Beispiel für eine subtile Hover-Vergrößerung für Karten oder interaktive Elemente */
+.card-hover-effect {
+  transition: transform var(--transition-speed) var(--transition-timing),
+              box-shadow var(--transition-speed) var(--transition-timing);
+}
+.card-hover-effect:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: var(--box-shadow); /* Stärkerer Schatten beim Hover */
+}

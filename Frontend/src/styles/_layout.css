@@ -1,0 +1,124 @@
+/* Haupt-App-Container (aus Layout.tsx) */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1; /* Nimmt den Platz in #root ein */
+}
+
+/* Header / Navbar */
+.app-container header {
+  background-color: var(--content-background-color);
+  padding: 0.75rem 0;
+  box-shadow: var(--box-shadow-sm);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  flex-shrink: 0; /* Verhindert Schrumpfen */
+}
+
+.app-container header nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 calc(var(--padding-base) * 1.5);
+}
+
+.app-container header nav .nav-logo { /* Der Container für das Logo */
+  display: flex; /* Hilft bei der vertikalen Zentrierung des Logos, falls nötig */
+  align-items: center;
+  margin-right: auto; /* Schiebt die .nav-links nach rechts */
+}
+
+.app-container header nav .nav-logo a {
+  display: inline-block; /* Wichtig, damit das Logo Platz einnimmt */
+  line-height: 0; /* Entfernt zusätzlichen Leerraum unter dem Bild, falls es inline ist */
+}
+
+.app-container header nav .nav-logo a:hover {
+  color: var(--primary-color);
+}
+
+.app-container header nav .nav-logo img {
+  height: 40px; /* Definiere eine maximale Höhe für das Logo */
+  width: auto;   /* Lässt die Breite automatisch anpassen, um das Seitenverhältnis beizubehalten */
+  max-width: 100%; /* Stellt sicher, dass das Logo nicht breiter als sein Container wird */
+  object-fit: contain; /* Stellt sicher, dass das gesamte Bild sichtbar ist, ohne Verzerrung */
+  transition: transform var(--transition-speed) var(--transition-timing); /* Für Hover-Effekt */
+}
+
+.app-container header nav .nav-logo a:hover img {
+  /* Optional: Leichter Hover-Effekt für das Logo */
+  transform: scale(1.05);
+}
+
+.app-container header nav .nav-links {
+  display: flex;
+  align-items: center;
+}
+
+.app-container header nav .nav-links a,
+.app-container header nav .nav-links button { /* Gilt auch für Logout-Button, wenn er wie ein Link aussieht */
+  margin-left: calc(var(--margin-base) * 1.5);
+  padding: 0.6rem 1rem;
+  font-weight: 500;
+  color: var(--text-muted-color);
+  text-decoration: none;
+  border-radius: var(--border-radius);
+  transition: background-color var(--transition-speed) var(--transition-timing),
+              color var(--transition-speed) var(--transition-timing);
+}
+.app-container header nav .nav-links a:hover,
+.app-container header nav .nav-links button:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+  color: var(--primary-color);
+  text-decoration: none;
+}
+.app-container header nav .nav-links a.active { /* Für React Router NavLink */
+  color: var(--primary-color);
+  font-weight: 600;
+  background-color: rgba(0, 123, 255, 0.1);
+}
+
+/* Hauptinhaltsbereich */
+.app-container main.content {
+  flex-grow: 1; /* Nimmt den verbleibenden Platz ein */
+  padding: calc(var(--padding-base) * 2.5) calc(var(--padding-base) * 1.5);
+}
+
+/* Seiten-spezifischer Container (Wrapper in Page-Komponenten) */
+.page-container {
+  background-color: var(--content-background-color);
+  padding: calc(var(--padding-base) * 2.5);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--box-shadow);
+  animation: fadeInFromBottom 0.6s var(--transition-timing) forwards;
+  max-width: 900px; /* Kann je nach Bedarf angepasst werden */
+  margin: var(--margin-base) auto;
+}
+
+/* Footer */
+.app-container footer {
+  background-color: var(--dark-color);
+  color: var(--light-color);
+  text-align: center;
+  padding: calc(var(--padding-base) * 2) var(--padding-base);
+  font-size: 0.9rem;
+  flex-shrink: 0; /* Verhindert Schrumpfen */
+}
+
+.app-container footer .footer-links {
+  margin-bottom: calc(var(--margin-base) / 2);
+}
+.app-container footer .footer-links a {
+  color: var(--light-color);
+  margin: 0 calc(var(--margin-base) * 0.75);
+  opacity: 0.8;
+  transition: opacity var(--transition-speed) var(--transition-timing);
+}
+.app-container footer .footer-links a:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
