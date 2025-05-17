@@ -40,11 +40,6 @@ function App() {
             {/* Geschützte Admin-Routen */}
             <Route element={<ProtectedRoute />}>
               <Route path="/admin" element={<AdminDashboardPage />} />
-              {/* Die alten Admin-Unterrouten wie /admin/races sind jetzt Teil der Tabs
-                  Wenn du tiefere Links für Tabs möchtest (z.B. /admin/teams),
-                  müsstest du react-router-dom's nested routes auch im AdminDashboard verwenden.
-                  Für den Anfang ist die State-basierte Tab-Lösung einfacher.
-              */}
             </Route>
 
             {/* Fallback für nicht gefundene Routen */}

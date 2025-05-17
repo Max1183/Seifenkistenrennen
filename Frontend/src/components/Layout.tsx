@@ -20,13 +20,12 @@ const Layout: React.FC = () => {
           <div className="nav-links">
             <NavLink to="/">Home</NavLink>
             <NavLink to="/results">Ergebnisse</NavLink>
-            <a href={CVJM_WEBSITE_URL} target="_blank" rel="noopener noreferrer">
-              CVJM Seite
-            </a>
-            {/* Admin-Link nur anzeigen, wenn eingeloggt (optional, kann auch ganz weg) */}
             {auth?.isAuthenticated && (
               <NavLink to="/admin">Admin</NavLink>
             )}
+            <a href={CVJM_WEBSITE_URL} target="_blank" rel="noopener noreferrer">
+              CVJM Seite
+            </a>
             {auth?.isAuthenticated && (
               <button onClick={() => auth.logout()} className="btn-logout">
                 Logout
