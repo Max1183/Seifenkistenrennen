@@ -3,9 +3,10 @@ import apiService from '../services/apiService'; // Importieren
 
 interface RacerFromAPI { // Definiere die Struktur, die deine API zurückgibt
   id: number;
+  rank: number;
   full_name: string;
   team: number | null; // Annahme: API gibt Team-ID zurück
-  team_name?: string; // Optional, wenn du es im Frontend anreichern willst oder vom Backend bekommst
+  team_name: string; // Optional, wenn du es im Frontend anreichern willst oder vom Backend bekommst
   best_time?: string; // Dieses Feld müsstest du im Backend berechnen und hinzufügen
 }
 
@@ -33,8 +34,7 @@ const ResultsPage: React.FC = () => {
         const processedRacers = racersData.map((racer: any, index: number) => ({
             ...racer,
             rank: index + 1, // Dummy-Rang
-            time: racer.best_time || `00:${45 + index}.${123 + index*50}`, // Dummy-Zeit
-            team_name: racer.team_details?.name || (racer.team ? `Team ID ${racer.team}` : 'Einzelstarter')
+            best_time: racer.best_time || `00:${45 + index}.${123 + index*50}`, // Dummy-Zeit
         }));
 
         setRacers(processedRacers);
@@ -86,7 +86,7 @@ const ResultsPage: React.FC = () => {
                 <td>{result.rank}</td>
                 <td>{result.full_name}</td>
                 <td>{result.team_name}</td>
-                <td>{result.time}</td>
+                <td>{result.best_time}</td>
               </tr>
             ))}
           </tbody>

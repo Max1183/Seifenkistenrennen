@@ -1,6 +1,7 @@
 // src/services/apiService.ts
 import axios, { AxiosError } from 'axios';
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
+import type { RacerFromAPI, RacerData } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
 
@@ -160,22 +161,45 @@ const deleteTeam = async (id: number | string) => {
   return response.data; // Oft leer oder Statuscode ist ausreichend
 };
 
-// Beispiel für Racer (ähnlich wie Teams)
 const getRacers = async (teamId?: number | string) => {
-  const params = teamId ? { team_id: teamId } : {};
-  const response = await apiClient.get('/racers/', { params });
+  const params = teamId ? { team_id: teamId } : {}; // Backend muss diesen Filter unterstützen
+  const response = await apiClient.get<RacerFromAPI[]>('/racers/', { params }); // Typ hier hinzufügen
   return response.data;
 };
-// ... weitere Racer-Funktionen (createRacer, getRacerById, etc.)
+
+const getRacerById = async (id: number | string) => {
+  const response = await apiClient.get<RacerFromAPI>(`/racers/${id}/`); // Typ hier hinzufügen
+  return response.data;
+};
+
+const createRacer = async (racerData: RacerData) => { // Typ für Eingabedaten
+  const response = await apiClient.post<RacerFromAPI>('/racers/', racerData); // Typ hier hinzufügen
+  return response.data;
+};
+
+const updateRacer = async (id: number | string, racerData: Partial<RacerData>) => { // Partial, da nicht alle Felder gesendet werden müssen
+  const response = await apiClient.put<RacerFromAPI>(`/racers/${id}/`, racerData); // Typ hier hinzufügen
+  return response.data;
+};
+
+const deleteRacer = async (id: number | string) => {
+  const response = await apiClient.delete(`/racers/${id}/`);
+  return response.data;
+};
+
 
 export default {
   login,
   logout,
-  getAccessToken, // Nützlich für den AuthContext
+  getAccessToken,
   getTeams,
   getTeamById,
   createTeam,
   updateTeam,
   deleteTeam,
-  getRacers,
+  getRacers,      // Hinzugefügt
+  getRacerById,   // Hinzugefügt
+  createRacer,
+  updateRacer,
+  deleteRacer,
 };

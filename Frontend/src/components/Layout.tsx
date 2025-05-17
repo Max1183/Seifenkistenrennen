@@ -45,7 +45,7 @@ const Layout: React.FC = () => {
           <Link to="/privacy">Datenschutz</Link>
           <Link to="/impressum">Impressum</Link>
         </div>
-        <p>© {new Date().getFullYear()} Dein Veranstaltername hier</p>
+        <p>© {new Date().getFullYear()} CVJM Weissach</p>
       </footer>
     </div>
   );

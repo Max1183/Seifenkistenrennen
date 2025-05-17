@@ -4,6 +4,7 @@ from .models import Team, Racer
 
 class RacerSerializer(serializers.ModelSerializer):
     age = serializers.IntegerField(source='get_age', read_only=True)
+    team_name = serializers.CharField(source='team.name', read_only=True)
 
     class Meta:
         model = Racer
@@ -15,6 +16,7 @@ class RacerSerializer(serializers.ModelSerializer):
             'date_of_birth',
             'age',
             'team',
+            'team_name',
         ]
         read_only_fields = ['id', 'full_name']
 
