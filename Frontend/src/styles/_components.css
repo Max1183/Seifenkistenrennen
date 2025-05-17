@@ -1,0 +1,154 @@
+/* --- Buttons --- */
+.btn {
+  display: inline-block;
+  font-weight: 500; /* Etwas dicker */
+  color: var(--light-color);
+  text-align: center;
+  vertical-align: middle;
+  cursor: pointer;
+  user-select: none;
+  background-color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  padding: 0.7rem 1.4rem; /* Etwas mehr Padding */
+  font-size: 0.95rem; /* Leicht angepasst */
+  line-height: 1.5;
+  border-radius: var(--border-radius);
+  transition: all var(--transition-speed) var(--transition-timing); /* 'all' für umfassende Übergänge */
+}
+
+.btn:hover {
+  color: var(--light-color);
+  background-color: var(--primary-hover-color);
+  border-color: var(--primary-hover-color);
+  text-decoration: none;
+  transform: translateY(-2px); /* Leichter Hover-Effekt */
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.btn:focus, .btn.focus {
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(var(--primary-color), 0.5); /* Verwendet RGB-Werte von --primary-color für Transparenz */
+}
+
+.btn:active {
+  transform: translateY(0px); /* Zurücksetzen beim Klick */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-secondary {
+  background-color: var(--secondary-color);
+  border-color: var(--secondary-color);
+}
+.btn-secondary:hover {
+  background-color: var(--secondary-hover-color);
+  border-color: var(--secondary-hover-color);
+}
+/* Weitere Button-Varianten (danger, success, outline etc.) können hier hinzugefügt werden */
+
+.app-container header nav .nav-links .btn-logout { /* Logout Button spezifisch stylen */
+  background-color: transparent;
+  border: 1px solid var(--secondary-color);
+  color: var(--secondary-color);
+  padding: 0.5rem 0.9rem; /* Etwas kleiner */
+}
+.app-container header nav .nav-links .btn-logout:hover {
+  background-color: var(--secondary-color);
+  color: var(--light-color);
+  border-color: var(--secondary-color);
+  transform: none; /* Kein Hover-Effekt für diesen speziellen Button */
+  box-shadow: none;
+}
+
+
+/* --- Formulare --- */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--margin-base) * 1.5);
+}
+
+form div { /* Jede Label-Input-Gruppe */
+  display: flex;
+  flex-direction: column;
+}
+
+form label {
+  margin-bottom: calc(var(--margin-base) / 2);
+  font-weight: 500;
+  color: var(--text-muted-color);
+  font-size: 0.9rem;
+}
+
+form input[type="text"],
+form input[type="password"],
+form input[type="email"],
+form input[type="number"],
+form select,
+form textarea {
+  padding: 0.85rem 1.1rem; /* Angepasstes Padding */
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  background-color: var(--content-background-color);
+  color: var(--text-color);
+  transition: border-color var(--transition-speed) var(--transition-timing),
+              box-shadow var(--transition-speed) var(--transition-timing);
+  width: 100%;
+}
+form input[type="text"]:focus,
+form input[type="password"]:focus,
+form input[type="email"]:focus,
+form input[type="number"]:focus,
+form select:focus,
+form textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(var(--primary-color), 0.25);
+}
+form input::placeholder,
+form textarea::placeholder {
+  color: var(--text-muted-color);
+  opacity: 0.7;
+}
+
+
+/* --- Tabellen (für Ergebnisse) --- */
+.results-table {
+  width: 100%;
+  margin-bottom: var(--margin-base);
+  color: var(--text-color);
+  border-collapse: collapse;
+  overflow: hidden;
+  border-radius: var(--border-radius-lg); /* Größerer Radius für Tabellen */
+  box-shadow: var(--box-shadow-sm);
+  background-color: var(--content-background-color);
+}
+
+.results-table th,
+.results-table td {
+  padding: var(--padding-base) calc(var(--padding-base) * 1.2);
+  vertical-align: middle; /* Zentriert vertikal besser */
+  border-top: 1px solid var(--border-color);
+  text-align: left;
+}
+
+.results-table thead th {
+  vertical-align: bottom;
+  border-bottom: 2px solid var(--dark-color); /* Stärkere Linie für Header */
+  background-color: var(--light-color); /* Subtilerer Header-Hintergrund */
+  color: var(--dark-color);
+  font-weight: 600; /* Etwas dicker */
+  font-size: 0.9rem;
+  text-transform: uppercase; /* Oft gut für Header */
+  letter-spacing: 0.5px;
+}
+
+.results-table tbody tr {
+  transition: background-color var(--transition-speed) var(--transition-timing);
+}
+.results-table tbody tr:nth-of-type(odd) {
+  background-color: rgba(0,0,0,.02); /* Sehr subtiler Zebra-Effekt */
+}
+.results-table tbody tr:hover {
+  background-color: rgba(var(--primary-color), 0.075);
+}

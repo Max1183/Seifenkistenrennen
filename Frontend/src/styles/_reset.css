@@ -1,0 +1,19 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: var(--base-font-size);
+  -webkit-tap-highlight-color: transparent; /* Entfernt den blauen Hintergrund beim Tippen auf mobilen Geräten */
+}
+
+/* Stellt sicher, dass #root immer die volle Höhe einnimmt und als Flex-Container dient */
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}

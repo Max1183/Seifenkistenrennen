@@ -1,0 +1,43 @@
+/* src/styles/_variables.css */
+:root {
+  /* Farben */
+  --primary-color: #007bff;
+  --primary-hover-color: #0056b3;
+  --secondary-color: #6c757d;
+  --secondary-hover-color: #545b62;
+  --light-color: #f8f9fa;
+  --dark-color: #343a40;
+  --text-color: #212529;
+  --text-muted-color: #6c757d;
+  --border-color: #dee2e6;
+  --background-color: #f8f9fa; /* Hintergrund der gesamten Seite */
+  --content-background-color: #ffffff; /* Hintergrund für .page-container etc. */
+
+  --success-color: #28a745;
+  --danger-color: #dc3545;
+  --warning-color: #ffc107;
+  --info-color: #17a2b8;
+
+  /* Schriftarten */
+  --font-family-sans-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-family-monospace: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Größen & Abstände */
+  --base-font-size: 16px;
+  --line-height-base: 1.6;
+  --padding-base: 1rem;
+  --margin-base: 1rem;
+
+  /* Ränder & Schatten */
+  --border-radius: 0.3rem;
+  --border-radius-lg: 0.5rem;
+  --box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+  --box-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+
+  /* Übergänge */
+  --transition-speed: 0.25s;
+  --transition-timing: ease-in-out;
+
+  /* Navbar */
+  --navbar-height: 60px; /* Beispiel, falls du feste Höhen brauchst */
+}

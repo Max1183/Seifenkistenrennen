@@ -1,28 +1,51 @@
 import React from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext'; // Wenn du AuthContext verwendest
+import { NavLink, Link, Outlet } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+const CVJM_WEBSITE_URL = "https://cvjmweissach.de/";
+const LOGO_URL = "/LogoBig.png";
 
 const Layout: React.FC = () => {
-  const auth = useAuth(); // Optional, für bedingte Links oder Logout-Button
+  const auth = useAuth();
 
   return (
     <div className="app-container">
       <header>
-        <nav className="container"> {/* Füge .container für Breitenbeschränkung hinzu, wenn gewünscht */}
-          <NavLink to="/">Ergebnisse</NavLink>
-          <NavLink to="/admin">Admin Bereich</NavLink>
-          {auth?.isAuthenticated && (
-            <button onClick={() => auth.logout()} className="btn btn-secondary" style={{ marginLeft: 'auto' }}>
-              Logout
-            </button>
-          )}
+        <nav>
+          <div className="nav-logo">
+            <Link to="/">
+              <img src={LOGO_URL} alt="Seifenkistenrennen Logo" />
+            </Link>
+          </div>
+          <div className="nav-links">
+            <NavLink to="/">Home</NavLink>
+            <NavLink to="/results">Ergebnisse</NavLink>
+            {auth?.isAuthenticated && (
+              <NavLink to="/admin">Admin</NavLink>
+            )}
+            <a href={CVJM_WEBSITE_URL} target="_blank" rel="noopener noreferrer">
+              CVJM Seite
+            </a>
+            {auth?.isAuthenticated && (
+              <button onClick={() => auth.logout()} className="btn-logout">
+                Logout
+              </button>
+            )}
+          </div>
         </nav>
       </header>
+
       <main className="content">
-        <Outlet /> {/* Hier wird der Inhalt der aktuellen Route gerendert */}
+        <Outlet />
       </main>
+
       <footer>
-        <p>© {new Date().getFullYear()} Seifenkistenrennen Veranstalter</p>
+        <div className="footer-links">
+          <Link to="/about">Über uns</Link>
+          <Link to="/privacy">Datenschutz</Link>
+          <Link to="/impressum">Impressum</Link>
+        </div>
+        <p>© {new Date().getFullYear()} CVJM Weissach</p>
       </footer>
     </div>
   );
