@@ -170,33 +170,36 @@ const AdminDashboardPage: React.FC = () => {
     }));
   };
 
-  const handleRacerSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    // Einfache Validierung
-    if (!racerFormData.first_name || !racerFormData.last_name || !racerFormData.date_of_birth) {
-      alert("Vorname, Nachname und Geburtsdatum sind erforderlich.");
-      return;
-    }
-    try {
-      const payload = {
-        ...racerFormData,
-        team: racerFormData.team ? racerFormData.team : undefined, // sende undefined statt null, wenn kein Team
-      };
+const handleRacerSubmit = async (e: FormEvent) => {
+  e.preventDefault();
+  if (!racerFormData.first_name || !racerFormData.last_name || !racerFormData.date_of_birth) {
+    alert("Vorname, Nachname und Geburtsdatum sind erforderlich.");
+    return;
+  }
+  try {
+    // Hier die Änderung:
+    const payload: RacerData = {
+      first_name: racerFormData.first_name,
+      last_name: racerFormData.last_name,
+      date_of_birth: racerFormData.date_of_birth,
+      team: racerFormData.team === undefined ? null : racerFormData.team, // Konvertiere undefined zu null
+    };
 
-      if (currentRacer) { // Update
-        const updatedRacer = await apiService.updateRacer(currentRacer.id, payload); // Annahme: updateRacer existiert in apiService
-        setRacers(racers.map(r => (r.id === updatedRacer.id ? { ...updatedRacer, team_details: teams.find(t=>t.id === updatedRacer.team) } : r)));
-      } else { // Create
-        const newRacer = await apiService.createRacer(payload); // Annahme: createRacer existiert in apiService
-        setRacers([...racers, { ...newRacer, team_details: teams.find(t=>t.id === newRacer.team) }]);
-      }
-      setIsRacerModalOpen(false);
-      setCurrentRacer(null);
-    } catch (error: any) {
-      console.error("Fehler beim Speichern des Racers:", error.response?.data || error.message);
-      alert(`Fehler beim Speichern des Racers: ${JSON.stringify(error.response?.data) || error.message}`);
+    if (currentRacer) { // Update
+      // Für Update ist Partial<RacerData> oft besser, da nicht alle Felder gesendet werden müssen
+      const updatedRacer = await apiService.updateRacer(currentRacer.id, payload);
+      setRacers(racers.map(r => (r.id === updatedRacer.id ? { ...updatedRacer, team_details: teams.find(t => t.id === updatedRacer.team) } : r)));
+    } else { // Create
+      const newRacer = await apiService.createRacer(payload); // Jetzt passt der Typ
+      setRacers([...racers, { ...newRacer, team_details: teams.find(t => t.id === newRacer.team) }]);
     }
-  };
+    setIsRacerModalOpen(false);
+    setCurrentRacer(null);
+  } catch (error: any) {
+    console.error("Fehler beim Speichern des Racers:", error.response?.data || error.message);
+    alert(`Fehler beim Speichern des Racers: ${JSON.stringify(error.response?.data) || error.message}`);
+  }
+};
 
   const handleDeleteRacer = async (racerId: number) => {
     if (window.confirm(`Teilnehmer wirklich löschen?`)) {
