@@ -1,7 +1,7 @@
 // src/services/apiService.ts
 import axios, { AxiosError } from 'axios';
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
-import type { RacerFromAPI, RacerData } from '../types';
+import type { RacerFromAPI, RacerData, RacerFrontend } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
 
@@ -161,9 +161,13 @@ const deleteTeam = async (id: number | string) => {
   return response.data; // Oft leer oder Statuscode ist ausreichend
 };
 
-const getRacers = async (teamId?: number | string) => {
-  const params = teamId ? { team_id: teamId } : {}; // Backend muss diesen Filter unterstützen
-  const response = await apiClient.get<RacerFromAPI[]>('/racers/', { params }); // Typ hier hinzufügen
+const getRacers = async (params?: Record<string, string | number>) => {
+  const response = await apiClient.get<RacerFrontend[]>('/racers/', { params });
+  return response.data;
+};
+
+const getRacerDetails = async (id: number | string) => {
+  const response = await apiClient.get<RacerFrontend>(`/racers/${id}/`);
   return response.data;
 };
 
@@ -197,8 +201,9 @@ export default {
   createTeam,
   updateTeam,
   deleteTeam,
-  getRacers,      // Hinzugefügt
-  getRacerById,   // Hinzugefügt
+  getRacers,
+  getRacerById,
+  getRacerDetails,
   createRacer,
   updateRacer,
   deleteRacer,

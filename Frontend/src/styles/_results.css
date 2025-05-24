@@ -1,0 +1,123 @@
+/* src/pages/ResultsPage.css */
+
+.results-page {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.results-loading,
+.results-error {
+  text-align: center;
+  font-size: 1.2rem;
+  padding: 2rem;
+}
+.results-error {
+  color: var(--danger-color);
+}
+
+.filters-container {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: var(--light-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.filters-container label {
+  font-weight: 500;
+}
+
+.filters-container select {
+  padding: 0.5rem 0.8rem;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  min-width: 150px;
+}
+
+.table-responsive {
+  overflow-x: auto; /* Erlaubt horizontales Scrollen für Tabellen auf kleinen Bildschirmen */
+}
+
+.results-table th {
+  cursor: pointer; /* Zeigt an, dass Spalten sortierbar sind */
+  user-select: none; /* Verhindert Textauswahl beim Klicken */
+  white-space: nowrap; /* Verhindert Umbruch in Headern */
+}
+.results-table th:hover {
+  background-color: rgba(0,0,0,0.05);
+}
+
+.results-table .clickable-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+}
+.results-table .clickable-row:hover {
+  background-color: rgba(var(--primary-color), 0.1) !important; /* Wichtig, um Zebra-Styling zu überschreiben */
+}
+
+/* Modal Styling (einfach) */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050; /* Über dem Rest der Seite */
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--box-shadow);
+  min-width: 320px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative; /* Für den Schließen-Button */
+  animation: fadeInFromBottom 0.4s ease-out;
+}
+
+.modal-close-button {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text-muted-color);
+}
+.modal-close-button:hover {
+  color: var(--dark-color);
+}
+
+.modal-content h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: var(--primary-color);
+}
+.modal-content h3 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.3rem;
+}
+.modal-content p {
+  margin-bottom: 0.75rem;
+}
+.modal-content .compact-table th,
+.modal-content .compact-table td {
+    padding: 0.5rem 0.7rem;
+    font-size: 0.9rem;
+}
