@@ -1,45 +1,58 @@
-from rest_framework import viewsets, permissions
-from .models import Team, Racer
+from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
+
+from .models import Team, Racer, RaceRun
 from .serializers import (
-    TeamSerializer,
-    RacerSerializer,
-    TeamWriteSerializer,
-    RacerWriteSerializer
+    TeamSerializer, RacerSerializer, RaceRunSerializer,
+    TeamWriteSerializer, RacerWriteSerializer, RaceRunWriteSerializer
 )
 
 
 class TeamViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows teams to be viewed or edited.
-    """
     queryset = Team.objects.all().prefetch_related('racers')
-    serializer_class = TeamSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['name']
 
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
             return TeamWriteSerializer
         return TeamSerializer
 
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
 
 class RacerViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows racers to be viewed or edited.
-    """
-    queryset = Racer.objects.select_related('team').all()
-    serializer_class = RacerSerializer
+    queryset = Racer.objects.select_related('team').prefetch_related('races').all()
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = {
+        'team': ['exact'],
+        'soapbox_class': ['exact'],
+        'last_name': ['icontains'],
+        'first_name': ['icontains'],
+        'start_number': ['exact'],
+    }
+    search_fields = ['first_name', 'last_name', 'team__name', 'start_number']
 
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
             return RacerWriteSerializer
         return RacerSerializer
 
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
-    def get_queryset(self):
-        queryset = Racer.objects.select_related('team').all()
-        team_id = self.request.query_params.get('team_id')
-        if team_id is not None:
-            queryset = queryset.filter(team_id=team_id)
-        return queryset
+class RaceRunViewSet(viewsets.ModelViewSet):
+    queryset = RaceRun.objects.select_related('racer', 'racer__team').all()
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = {
+        'racer': ['exact'],
+        'racer__team': ['exact'],
+        'run_type': ['exact'],
+        'disqualified': ['exact'],
+    }
+
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return RaceRunWriteSerializer
+        return RaceRunSerializer
