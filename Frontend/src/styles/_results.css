@@ -1,123 +1,126 @@
-/* src/pages/ResultsPage.css */
+/* src/styles/_results.css */
 
 .results-page {
-  animation: fadeIn 0.5s ease-out;
+  /* animation applied by .page-enter-animation if desired */
 }
 
 .results-loading,
-.results-error {
+.results-error-message {
   text-align: center;
-  font-size: 1.2rem;
-  padding: 2rem;
+  font-size: 1.1rem;
+  padding: var(--spacing-xl) var(--spacing-md);
+  color: var(--text-light-color);
+  border-radius: var(--border-radius-md);
 }
-.results-error {
+.results-error-message {
+  background-color: rgba(var(--danger-color-rgb), 0.1);
   color: var(--danger-color);
+  border: 1px solid rgba(var(--danger-color-rgb), 0.2);
 }
 
 .filters-container {
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background-color: var(--light-color);
-  border-radius: var(--border-radius);
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background-color: var(--content-background-color);
+  border-radius: var(--border-radius-md);
   box-shadow: var(--box-shadow-sm);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 1rem;
+  gap: var(--spacing-lg); 
+}
+
+.filters-container .filter-group {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
 }
 
 .filters-container label {
   font-weight: 500;
+  color: var(--text-color);
+  margin-bottom: 0;
 }
 
-.filters-container select {
-  padding: 0.5rem 0.8rem;
-  border-radius: var(--border-radius);
-  border: 1px solid var(--border-color);
-  min-width: 150px;
+.filters-container select.form-control {
+  min-width: 200px; 
 }
 
-.table-responsive {
-  overflow-x: auto; /* Erlaubt horizontales Scrollen für Tabellen auf kleinen Bildschirmen */
-}
-
-.results-table th {
-  cursor: pointer; /* Zeigt an, dass Spalten sortierbar sind */
-  user-select: none; /* Verhindert Textauswahl beim Klicken */
-  white-space: nowrap; /* Verhindert Umbruch in Headern */
-}
-.results-table th:hover {
-  background-color: rgba(0,0,0,0.05);
-}
-
-.results-table .clickable-row {
-  cursor: pointer;
-  transition: background-color 0.15s ease-in-out;
-}
-.results-table .clickable-row:hover {
-  background-color: rgba(var(--primary-color), 0.1) !important; /* Wichtig, um Zebra-Styling zu überschreiben */
-}
-
-/* Modal Styling (einfach) */
+/* Modal Styling (Generic, also used by Admin) */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1050; /* Über dem Rest der Seite */
-  animation: fadeIn 0.3s ease-out;
+  inset: 0;
+  background-color: rgba(var(--heading-color-rgb), 0.5); /* Slightly less opaque */
+  display: flex; /* Changed from grid */
+  align-items: flex-start; /* Align modal to top */
+  justify-content: center; /* Keep modal centered horizontally */
+  z-index: var(--z-index-modal-backdrop);
+  padding: 5vh var(--spacing-md) 5vh; /* Vertical padding for top/bottom, horizontal for sides */
+  overflow-y: auto; /* Allows overlay to scroll if modal is very tall */
 }
 
 .modal-content {
-  background: white;
-  padding: 2rem;
+  background: var(--content-background-color);
+  padding: var(--spacing-lg);
   border-radius: var(--border-radius-lg);
-  box-shadow: var(--box-shadow);
-  min-width: 320px;
-  max-width: 600px;
-  width: 90%;
-  max-height: 80vh;
+  box-shadow: var(--box-shadow-lg);
+  width: 100%;
+  max-width: 600px; /* Default max-width */
+  max-height: calc(90vh - 2 * 5vh); /* Max height considering overlay's top/bottom padding */
   overflow-y: auto;
-  position: relative; /* Für den Schließen-Button */
-  animation: fadeInFromBottom 0.4s ease-out;
+  position: relative; 
+}
+
+/* Specific modal sizes using classes */
+.modal-content-sm { max-width: 400px; }
+.modal-content-md { max-width: 600px; }
+.modal-content-lg { max-width: 800px; }
+
+
+@media (min-width: var(--breakpoint-md)) {
+  .modal-content {
+    padding: var(--spacing-xl);
+  }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    border-bottom: 1px solid var(--border-light-color);
+}
+.modal-header h2 {
+    margin-bottom: 0;
+    font-size: 1.6rem; 
 }
 
 .modal-close-button {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
+  font-size: 1.8rem; 
+  font-weight: 300; 
+  line-height: 1;
+  color: var(--text-light-color);
   background: none;
   border: none;
-  font-size: 1.8rem;
-  line-height: 1;
-  cursor: pointer;
-  color: var(--text-muted-color);
+  padding: var(--spacing-xs);
+  transition: color var(--transition-speed-fast) var(--transition-timing), transform var(--transition-speed-fast) var(--transition-timing);
+  position: relative; /* For stacking context */
+  z-index: 10; /* Ensure it's above other elements in header */
 }
 .modal-close-button:hover {
-  color: var(--dark-color);
+  color: var(--danger-color);
+  transform: scale(1.1);
 }
 
-.modal-content h2 {
-  margin-top: 0;
-  margin-bottom: 1.5rem;
-  color: var(--primary-color);
+.modal-body p {
+  margin-bottom: var(--spacing-sm);
 }
-.modal-content h3 {
-    margin-top: 1.5rem;
-    margin-bottom: 0.5rem;
-    font-size: 1.1rem;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 0.3rem;
-}
-.modal-content p {
-  margin-bottom: 0.75rem;
-}
-.modal-content .compact-table th,
-.modal-content .compact-table td {
-    padding: 0.5rem 0.7rem;
-    font-size: 0.9rem;
+.modal-body h3 { 
+  font-size: 1.2rem;
+  margin-top: var(--spacing-lg);
+  margin-bottom: var(--spacing-sm);
+  color: var(--heading-color);
+  padding-bottom: var(--spacing-xs);
+  border-bottom: 1px solid var(--border-light-color);
 }

@@ -7,48 +7,50 @@ const AdminLoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const auth = useAuth();
-  // const navigate = useNavigate(); // Wird jetzt vom AuthContext gehandhabt
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    setError(null); // Fehler zurücksetzen
-    if (!auth) return;
+    setError(null);
+    if (!auth) return; // Should not happen if AuthProvider is correctly set up
 
     const success = await auth.login(username, password);
     if (!success) {
       setError('Login fehlgeschlagen. Bitte Benutzername und Passwort überprüfen.');
     }
-    // Die Navigation erfolgt jetzt innerhalb der auth.login Methode bei Erfolg
+    // Navigation is handled by AuthContext on successful login
   };
 
   return (
-    <div className="page-container" style={{ maxWidth: '500px' }}>
+    <div className="page-container page-enter-animation" style={{ maxWidth: '450px', margin: 'var(--spacing-xl) auto' }}>
       <h1>Admin Login</h1>
       <form onSubmit={handleSubmit}>
-        {error && <p style={{ color: 'var(--danger-color)' }}>{error}</p>}
-        <div>
+        {error && <p style={{ color: 'var(--danger-color)', marginBottom: 'var(--spacing-md)' }}>{error}</p>}
+        <div className="form-group">
           <label htmlFor="username">Benutzername:</label>
           <input
             type="text"
             id="username"
+            className="form-control"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
+            autoFocus
             disabled={auth.isLoading}
           />
         </div>
-        <div>
+        <div className="form-group">
           <label htmlFor="password">Passwort:</label>
           <input
             type="password"
             id="password"
+            className="form-control"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
             disabled={auth.isLoading}
           />
         </div>
-        <button type="submit" className="btn" disabled={auth.isLoading}>
+        <button type="submit" className="btn btn-primary btn-lg" style={{width: '100%'}} disabled={auth.isLoading}>
           {auth.isLoading ? 'Melde an...' : 'Anmelden'}
         </button>
       </form>

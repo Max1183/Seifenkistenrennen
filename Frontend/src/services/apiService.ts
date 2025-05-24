@@ -1,7 +1,14 @@
 // src/services/apiService.ts
-import axios, { AxiosError } from 'axios';
-import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
-import type { RacerFromAPI, RacerData, RacerFrontend } from '../types';
+import axios from 'axios';
+import type { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
+import type {
+  RacerFromAPI,
+  RacerFormData,
+  TeamFromAPI,
+  TeamFormData,
+  RaceRunFromAPI,
+  RaceRunFormData
+} from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
 
@@ -10,7 +17,6 @@ interface TokenPair {
   refresh: string;
 }
 
-// Hilfsfunktionen für Tokens
 const getAccessToken = (): string | null => localStorage.getItem('accessToken');
 const getRefreshToken = (): string | null => localStorage.getItem('refreshToken');
 const setTokens = (tokens: TokenPair): void => {
@@ -22,15 +28,11 @@ const clearTokens = (): void => {
   localStorage.removeItem('refreshToken');
 };
 
-// Erstelle eine Axios-Instanz
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
-// Request Interceptor: Fügt den Access Token zu jedem Request hinzu, falls vorhanden
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = getAccessToken();
@@ -39,24 +41,14 @@ apiClient.interceptors.request.use(
     }
     return config;
   },
-  (error: AxiosError) => {
-    return Promise.reject(error);
-  }
+  (error: AxiosError) => Promise.reject(error)
 );
 
-// Response Interceptor: Handhabt Token-Refresh bei 401-Fehlern
-// Dies ist eine vereinfachte Version. In einer Produktions-App wäre dies robuster.
 let isRefreshing = false;
 let failedQueue: Array<{ resolve: (value?: any) => void; reject: (reason?: any) => void }> = [];
 
 const processQueue = (error: AxiosError | null, token: string | null = null) => {
-  failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
+  failedQueue.forEach(prom => error ? prom.reject(error) : prom.resolve(token));
   failedQueue = [];
 };
 
@@ -65,146 +57,83 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry && getRefreshToken()) {
       if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        })
-        .then(token => {
-          if (originalRequest.headers) {
-            originalRequest.headers['Authorization'] = 'Bearer ' + token;
-          }
-          return apiClient(originalRequest);
-        })
-        .catch(err => {
-          return Promise.reject(err);
-        });
+        return new Promise((resolve, reject) => failedQueue.push({ resolve, reject }))
+          .then(token => {
+            if (originalRequest.headers) originalRequest.headers['Authorization'] = 'Bearer ' + token;
+            return apiClient(originalRequest);
+          }).catch(err => Promise.reject(err));
       }
-
       originalRequest._retry = true;
       isRefreshing = true;
-      const localRefreshToken = getRefreshToken();
+      try {
+        const refreshToken = getRefreshToken();
+        // Ensure refreshToken is not null before making the call, though getRefreshToken() above should suffice
+        if (!refreshToken) throw new Error("No refresh token available");
 
-      if (localRefreshToken) {
-        try {
-          const { data } = await axios.post<TokenPair>(`${API_BASE_URL}/token/refresh/`, {
-            refresh: localRefreshToken,
-          });
-          setTokens(data);
-          if (originalRequest.headers) {
-             originalRequest.headers.Authorization = `Bearer ${data.access}`;
-          }
-          processQueue(null, data.access);
-          return apiClient(originalRequest);
-        } catch (refreshError) {
-          processQueue(refreshError as AxiosError, null);
-          clearTokens();
-          // Hier könntest du den Benutzer zur Login-Seite weiterleiten
-          window.dispatchEvent(new Event('authError')); // Event für AuthContext zum Abhören
-          return Promise.reject(refreshError);
-        } finally {
-          isRefreshing = false;
-        }
-      } else {
-        // Kein Refresh-Token vorhanden, leite zum Login oder werfe Fehler
+        const { data } = await axios.post<TokenPair>(`${API_BASE_URL}/token/refresh/`, { refresh: refreshToken });
+        setTokens(data);
+        if (originalRequest.headers) originalRequest.headers.Authorization = `Bearer ${data.access}`;
+        processQueue(null, data.access);
+        return apiClient(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError as AxiosError, null);
+        clearTokens();
+        window.dispatchEvent(new Event('authError')); // Notify app about auth failure
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+    // If 401 and no refresh token, or if originalRequest._retry is true (meaning refresh already failed)
+    if (error.response?.status === 401 && (!getRefreshToken() || originalRequest._retry)) {
         clearTokens();
         window.dispatchEvent(new Event('authError'));
-        return Promise.reject(error);
-      }
     }
     return Promise.reject(error);
   }
 );
 
-
-// Authentifizierungs-Funktionen
 const login = async (username: string, password: string): Promise<TokenPair> => {
-  const response = await apiClient.post<TokenPair>('/token/', { username, password });
-  setTokens(response.data);
-  return response.data;
+  const { data } = await apiClient.post<TokenPair>('/token/', { username, password });
+  setTokens(data);
+  return data;
 };
 
-const logout = (): void => {
-  // Optional: Informiere das Backend über den Logout (Invalidierung des Refresh-Tokens)
-  // const refreshToken = getRefreshToken();
-  // if (refreshToken) {
-  //   apiClient.post('/auth/logout/', { refresh: refreshToken }).catch(console.error);
-  // }
-  clearTokens();
-};
+const logout = (): void => clearTokens();
 
+// Teams
+const getTeams = async () => apiClient.get<TeamFromAPI[]>('/teams/').then(res => res.data);
+const getTeamById = async (id: number | string) => apiClient.get<TeamFromAPI>(`/teams/${id}/`).then(res => res.data);
+const createTeam = async (teamData: TeamFormData) => apiClient.post<TeamFromAPI>('/teams/', teamData).then(res => res.data);
+const updateTeam = async (id: number | string, teamData: TeamFormData) => apiClient.put<TeamFromAPI>(`/teams/${id}/`, teamData).then(res => res.data);
+const deleteTeam = async (id: number | string) => apiClient.delete(`/teams/${id}/`).then(res => res.data);
 
-// --- Generische CRUD-Funktionen oder spezifische Service-Funktionen ---
-// Beispiel für Teams
-const getTeams = async () => {
-  const response = await apiClient.get('/teams/');
-  return response.data;
+// Racers
+const getRacers = async (params?: Record<string, string | number>) => apiClient.get<RacerFromAPI[]>('/racers/', { params }).then(res => res.data);
+const getRacerDetails = async (id: number | string) => apiClient.get<RacerFromAPI>(`/racers/${id}/`).then(res => res.data);
+const createRacer = async (racerData: RacerFormData) => {
+    const payload = { ...racerData, team: racerData.team === '' ? null : racerData.team };
+    return apiClient.post<RacerFromAPI>('/racers/', payload).then(res => res.data);
 };
+const updateRacer = async (id: number | string, racerData: Partial<RacerFormData>) => {
+    const payload = { ...racerData, team: racerData.team === '' ? null : racerData.team };
+    // Ensure date_of_birth is included if present, otherwise backend might reject partial update on this field
+    return apiClient.put<RacerFromAPI>(`/racers/${id}/`, payload).then(res => res.data);
+};
+const deleteRacer = async (id: number | string) => apiClient.delete(`/racers/${id}/`).then(res => res.data);
 
-const getTeamById = async (id: number | string) => {
-  const response = await apiClient.get(`/teams/${id}/`);
-  return response.data;
-};
-
-const createTeam = async (teamData: { name: string; /* weitere Felder */ }) => {
-  const response = await apiClient.post('/teams/', teamData);
-  return response.data;
-};
-
-const updateTeam = async (id: number | string, teamData: { name: string; /* weitere Felder */ }) => {
-  const response = await apiClient.put(`/teams/${id}/`, teamData);
-  return response.data;
-};
-
-const deleteTeam = async (id: number | string) => {
-  const response = await apiClient.delete(`/teams/${id}/`);
-  return response.data; // Oft leer oder Statuscode ist ausreichend
-};
-
-const getRacers = async (params?: Record<string, string | number>) => {
-  const response = await apiClient.get<RacerFrontend[]>('/racers/', { params });
-  return response.data;
-};
-
-const getRacerDetails = async (id: number | string) => {
-  const response = await apiClient.get<RacerFrontend>(`/racers/${id}/`);
-  return response.data;
-};
-
-const getRacerById = async (id: number | string) => {
-  const response = await apiClient.get<RacerFromAPI>(`/racers/${id}/`); // Typ hier hinzufügen
-  return response.data;
-};
-
-const createRacer = async (racerData: RacerData) => { // Typ für Eingabedaten
-  const response = await apiClient.post<RacerFromAPI>('/racers/', racerData); // Typ hier hinzufügen
-  return response.data;
-};
-
-const updateRacer = async (id: number | string, racerData: Partial<RacerData>) => { // Partial, da nicht alle Felder gesendet werden müssen
-  const response = await apiClient.put<RacerFromAPI>(`/racers/${id}/`, racerData); // Typ hier hinzufügen
-  return response.data;
-};
-
-const deleteRacer = async (id: number | string) => {
-  const response = await apiClient.delete(`/racers/${id}/`);
-  return response.data;
-};
+// RaceRuns
+const getRaceRuns = async (params?: Record<string, string | number>) => apiClient.get<RaceRunFromAPI[]>('/raceruns/', { params }).then(res => res.data);
+const createRaceRun = async (data: RaceRunFormData) => apiClient.post<RaceRunFromAPI>('/raceruns/', data).then(res => res.data);
+const updateRaceRun = async (id: number, data: Partial<RaceRunFormData>) => apiClient.put<RaceRunFromAPI>(`/raceruns/${id}/`, data).then(res => res.data);
+const deleteRaceRun = async (id: number) => apiClient.delete(`/raceruns/${id}/`).then(res => res.data);
 
 
 export default {
-  login,
-  logout,
-  getAccessToken,
-  getTeams,
-  getTeamById,
-  createTeam,
-  updateTeam,
-  deleteTeam,
-  getRacers,
-  getRacerById,
-  getRacerDetails,
-  createRacer,
-  updateRacer,
-  deleteRacer,
+  login, logout, getAccessToken,
+  getTeams, getTeamById, createTeam, updateTeam, deleteTeam,
+  getRacers, getRacerDetails, createRacer, updateRacer, deleteRacer,
+  getRaceRuns, createRaceRun, updateRaceRun, deleteRaceRun,
 };

@@ -1,124 +1,263 @@
-/* Haupt-App-Container (aus Layout.tsx) */
+/* src/styles/_layout.css */
+
+body.mobile-menu-open {
+  overflow: hidden; /* Prevent scrolling of body when mobile menu is open */
+}
+
 .app-container {
   display: flex;
   flex-direction: column;
-  flex-grow: 1; /* Nimmt den Platz in #root ein */
+  min-height: 100vh; 
 }
 
-/* Header / Navbar */
-.app-container header {
+.app-header {
   background-color: var(--content-background-color);
-  padding: 0.75rem 0;
   box-shadow: var(--box-shadow-sm);
-  border-bottom: 1px solid var(--border-color);
   position: sticky;
   top: 0;
-  z-index: 1000;
-  flex-shrink: 0; /* Verhindert Schrumpfen */
-}
-
-.app-container header nav {
+  z-index: var(--z-index-sticky);
+  height: var(--navbar-height);
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 calc(var(--padding-base) * 1.5);
 }
 
-.app-container header nav .nav-logo { /* Der Container für das Logo */
-  display: flex; /* Hilft bei der vertikalen Zentrierung des Logos, falls nötig */
+.app-header nav { /* This is the main nav container inside .container */
+  display: flex;
+  justify-content: space-between; /* Key for logo left, links/toggle right */
   align-items: center;
-  margin-right: auto; /* Schiebt die .nav-links nach rechts */
+  width: 100%; 
+  height: 100%;
 }
 
-.app-container header nav .nav-logo a {
-  display: inline-block; /* Wichtig, damit das Logo Platz einnimmt */
-  line-height: 0; /* Entfernt zusätzlichen Leerraum unter dem Bild, falls es inline ist */
+.nav-logo {
+  display: flex;
+  align-items: center;
+  height: 100%; 
+  flex-shrink: 0; 
+  /* Removed padding: 0 var(--spacing-sm); - apply to 'a' if needed for click area */
 }
 
-.app-container header nav .nav-logo a:hover {
-  color: var(--primary-color);
+.nav-logo a {
+  display: flex; 
+  align-items: center;
+  height: 100%; 
+  padding: 0 var(--spacing-sm); /* Horizontal padding for click area around logo */
 }
 
-.app-container header nav .nav-logo img {
-  height: 40px; /* Definiere eine maximale Höhe für das Logo */
-  width: auto;   /* Lässt die Breite automatisch anpassen, um das Seitenverhältnis beizubehalten */
-  max-width: 100%; /* Stellt sicher, dass das Logo nicht breiter als sein Container wird */
-  object-fit: contain; /* Stellt sicher, dass das gesamte Bild sichtbar ist, ohne Verzerrung */
-  transition: transform var(--transition-speed) var(--transition-timing); /* Für Hover-Effekt */
+.nav-logo img {
+  display: block;
+  max-height: calc(var(--navbar-height) - 2 * var(--spacing-xs)); 
+  width: auto;
+  object-fit: contain; 
+  transition: transform var(--transition-speed-normal) var(--transition-timing);
 }
 
-.app-container header nav .nav-logo a:hover img {
-  /* Optional: Leichter Hover-Effekt für das Logo */
+.nav-logo a:hover img {
   transform: scale(1.05);
 }
 
-.app-container header nav .nav-links {
+/* Desktop Navigation Links - Default Visible */
+.nav-links-desktop {
   display: flex;
   align-items: center;
+  gap: var(--spacing-sm); 
+  margin-left: auto; /* Pushes desktop links to the right */
 }
 
-.app-container header nav .nav-links a,
-.app-container header nav .nav-links button { /* Gilt auch für Logout-Button, wenn er wie ein Link aussieht */
-  margin-left: calc(var(--margin-base) * 1.5);
-  padding: 0.6rem 1rem;
+.nav-links-desktop a,
+.nav-links-desktop .btn-logout {
+  padding: var(--spacing-sm) var(--spacing-md);
   font-weight: 500;
-  color: var(--text-muted-color);
+  color: var(--text-light-color);
   text-decoration: none;
-  border-radius: var(--border-radius);
-  transition: background-color var(--transition-speed) var(--transition-timing),
-              color var(--transition-speed) var(--transition-timing);
-}
-.app-container header nav .nav-links a:hover,
-.app-container header nav .nav-links button:hover {
-  background-color: rgba(0, 123, 255, 0.05);
-  color: var(--primary-color);
-  text-decoration: none;
-}
-.app-container header nav .nav-links a.active { /* Für React Router NavLink */
-  color: var(--primary-color);
-  font-weight: 600;
-  background-color: rgba(0, 123, 255, 0.1);
+  border-radius: var(--border-radius-sm);
+  transition: background-color var(--transition-speed-fast) var(--transition-timing),
+              color var(--transition-speed-fast) var(--transition-timing);
+  position: relative;
+  white-space: nowrap;
 }
 
-/* Hauptinhaltsbereich */
-.app-container main.content {
-  flex-grow: 1; /* Nimmt den verbleibenden Platz ein */
-  padding: calc(var(--padding-base) * 2.5) calc(var(--padding-base) * 1.5);
+.nav-links-desktop a::after { 
+  content: '';
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%) scaleX(0);
+  width: 70%;
+  height: 2px;
+  background-color: var(--primary-color);
+  transition: transform var(--transition-speed-normal) var(--transition-timing);
+  transform-origin: center;
 }
 
-/* Seiten-spezifischer Container (Wrapper in Page-Komponenten) */
+.nav-links-desktop a:hover,
+.nav-links-desktop a.active {
+  color: var(--primary-color);
+}
+.nav-links-desktop a:hover::after,
+.nav-links-desktop a.active::after {
+  transform: translateX(-50%) scaleX(1);
+}
+
+.nav-links-desktop .btn-logout {
+  background-color: transparent;
+  border: 1px solid var(--border-light-color);
+  color: var(--text-light-color);
+  margin-left: var(--spacing-md);
+}
+.nav-links-desktop .btn-logout:hover {
+  background-color: var(--primary-light-color);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+/* Mobile Navigation Toggle Button - Default Hidden */
+.mobile-nav-toggle {
+  display: none; 
+  font-size: 1.8rem; 
+  color: var(--heading-color);
+  background: none;
+  border: none;
+  padding: var(--spacing-sm);
+  z-index: calc(var(--z-index-offcanvas) + 1); 
+  cursor: pointer;
+  /* margin-left: auto; This will be implicitly handled by flex space-between on nav */
+}
+
+/* Off-Canvas Mobile Navigation Menu */
+.nav-links-mobile {
+  position: fixed;
+  top: 0; 
+  right: 0;
+  bottom: 0;
+  width: min(80vw, 300px); 
+  background-color: var(--content-background-color);
+  box-shadow: var(--box-shadow-lg);
+  border-left: 1px solid var(--border-color);
+  padding: var(--spacing-xl) 0 var(--spacing-md); 
+  transform: translateX(100%);
+  transition: transform var(--transition-speed-normal) var(--transition-timing);
+  z-index: var(--z-index-offcanvas);
+  overflow-y: auto; 
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-links-mobile.open {
+  transform: translateX(0);
+}
+
+.nav-links-mobile a,
+.nav-links-mobile .btn-logout {
+  display: block; 
+  margin: 0; 
+  text-align: left;
+  padding: var(--spacing-md) var(--spacing-lg); 
+  border-bottom: 1px solid var(--border-light-color);
+  border-radius: 0; 
+  color: var(--text-color); 
+  font-weight: 500;
+  text-decoration: none;
+}
+.nav-links-mobile a:hover,
+.nav-links-mobile a.active {
+  background-color: var(--primary-light-color);
+  color: var(--primary-color);
+}
+
+.nav-links-mobile > *:last-child {
+    border-bottom: none;
+}
+
+.nav-links-mobile .btn-logout {
+    margin: var(--spacing-lg) var(--spacing-lg) 0; 
+    text-align: center; 
+    width: calc(100% - (2 * var(--spacing-lg))); 
+    border: 1px solid var(--border-light-color); 
+    color: var(--text-light-color);
+}
+.nav-links-mobile .btn-logout:hover {
+    background-color: var(--primary-light-color);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+/* Mobile Menu Overlay */
+.mobile-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.4);
+  z-index: calc(var(--z-index-offcanvas) - 1); 
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-speed-normal) var(--transition-timing), 
+              visibility var(--transition-speed-normal) var(--transition-timing);
+}
+.mobile-menu-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+
+/* Main Content */
+.app-main-content {
+  flex-grow: 1;
+  padding: var(--spacing-xl) 0;
+}
+
 .page-container {
   background-color: var(--content-background-color);
-  padding: calc(var(--padding-base) * 2.5);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--box-shadow);
-  animation: fadeInFromBottom 0.6s var(--transition-timing) forwards;
-  max-width: 900px; /* Kann je nach Bedarf angepasst werden */
-  margin: var(--margin-base) auto;
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-lg); 
+  box-shadow: var(--box-shadow-md);
+}
+@media (min-width: var(--breakpoint-md)) {
+  .page-container {
+    padding: var(--spacing-xl);
+  }
 }
 
 /* Footer */
-.app-container footer {
-  background-color: var(--dark-color);
-  color: var(--light-color);
+.app-footer {
+  background-color: var(--heading-color);
+  color: var(--background-color);
   text-align: center;
-  padding: calc(var(--padding-base) * 2) var(--padding-base);
+  padding: var(--spacing-lg) var(--spacing-md);
   font-size: 0.9rem;
-  flex-shrink: 0; /* Verhindert Schrumpfen */
+  flex-shrink: 0;
+  margin-top: auto; 
 }
 
-.app-container footer .footer-links {
-  margin-bottom: calc(var(--margin-base) / 2);
+.app-footer .footer-links {
+  margin-bottom: var(--spacing-sm);
 }
-.app-container footer .footer-links a {
-  color: var(--light-color);
-  margin: 0 calc(var(--margin-base) * 0.75);
+.app-footer .footer-links a {
+  color: var(--background-color);
+  margin: 0 var(--spacing-sm);
   opacity: 0.8;
-  transition: opacity var(--transition-speed) var(--transition-timing);
+  transition: opacity var(--transition-speed-normal) var(--transition-timing);
 }
-.app-container footer .footer-links a:hover {
+.app-footer .footer-links a:hover {
   opacity: 1;
   text-decoration: underline;
+}
+
+
+/* Media Query for switching to mobile navigation */
+@media (max-width: var(--breakpoint-lg)) { 
+  .nav-links-desktop {
+    display: none; /* Hide desktop links */
+  }
+  .mobile-nav-toggle {
+    display: block; /* Show hamburger button */
+  }
+}
+
+/* Add a new Z-index variable for offcanvas */
+:root {
+  /* ... other variables ... */
+  --z-index-offcanvas: 1030; /* Between sticky and modal backdrop */
 }

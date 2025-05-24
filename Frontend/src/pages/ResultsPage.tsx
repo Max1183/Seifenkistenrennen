@@ -1,122 +1,115 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import ReactDOM from 'react-dom'; // Import ReactDOM for Portals
 import apiService from '../services/apiService';
-import type { RacerFrontend, SoapboxClassOption } from '../types';
+import type { RacerFromAPI, SoapboxClassOption } from '../types';
+import {
+  SOAPBOX_CLASS_DISPLAY_MAP,
+  type SoapboxClassValue,
+  RACE_RUN_TYPE_DISPLAY_MAP,
+  type RaceRunTypeValue,
+  DISPLAYED_RUN_TYPES_ORDER
+} from '../types';
 
-// Hilfsfunktion zum Konvertieren der Zeit in Sekunden (oder null)
 const parseTimeToSeconds = (time: string | null): number | null => {
-  if (time === null || time === undefined || time === "N/A") return null;
+  if (!time || time === "N/A") return null;
   const parsed = parseFloat(time);
   return isNaN(parsed) ? null : parsed;
 };
 
-// Hilfsfunktion zum Formatieren von Sekunden in MM:SS.mmm oder SS.mmm
-const formatSecondsToTime = (totalSeconds: number | null | undefined, includeMinutes = false): string => {
+const formatSecondsToTime = (totalSeconds: number | null | undefined): string => {
   if (totalSeconds === null || totalSeconds === undefined) return "N/A";
-  if (includeMinutes) {
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${String(minutes).padStart(2, '0')}:${seconds.toFixed(3).padStart(6, '0')}`;
-  }
   return totalSeconds.toFixed(3);
 };
 
-// Konstanten für Rennläufe (um sie in der Tabelle anzuzeigen)
-const RUN_TYPES_ORDER: Record<string, string> = {
-  'PR': 'Practice', // Oder wie es in deinem run_type_display steht
-  'H1': 'Heat 1',
-  'H2': 'Heat 2',
-  // Füge hier weitere hinzu, falls nötig, in der gewünschten Reihenfolge
-};
-
-
-// Einfaches Modal für Racer-Details
 interface RacerDetailModalProps {
-  racer: RacerFrontend | null;
+  racer: RacerFromAPI | null;
   isOpen: boolean;
   onClose: () => void;
 }
 const RacerDetailModal: React.FC<RacerDetailModalProps> = ({ racer, isOpen, onClose }) => {
-  if (!isOpen || !racer) return null;
+  const modalRoot = document.getElementById('modal-root');
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
+  const modalContent = (
+    <div className="modal-overlay modal-enter" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close-button" onClick={onClose}>×</button>
-        <h2>{racer.full_name}</h2>
-        <p><strong>Team:</strong> {racer.team_name || 'Einzelstarter'}</p>
-        <p><strong>Klasse:</strong> {racer.soapbox_class_display}</p>
-        <p><strong>Beste Zeit:</strong> {formatSecondsToTime(parseTimeToSeconds(racer.best_time_seconds))}s</p>
-        <p><strong>Platz:</strong> {racer.rank || 'N/A'}</p>
-        <h3>Alle Läufe:</h3>
-        {racer.races.length > 0 ? (
-          <table className="results-table compact-table">
-            <thead>
-              <tr>
-                <th>Lauf</th>
-                <th>Zeit (s)</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.keys(RUN_TYPES_ORDER).map(runKey => {
-                 const run = racer.races.find(r => r.run_type === runKey);
-                 if (!run) return null; // oder eine leere Zeile rendern
-                 return (
-                    <tr key={`${run.run_type}-${run.run_identifier}`}>
-                      <td>{run.run_type_display} {run.run_identifier > 1 ? run.run_identifier : ''}</td>
-                      <td>{run.disqualified ? 'DQ' : formatSecondsToTime(parseTimeToSeconds(run.time_in_seconds))}</td>
-                      <td>{run.disqualified ? 'Disqualifiziert' : (run.time_in_seconds ? 'OK' : 'N/A')}</td>
-                    </tr>
-                 );
-              })}
-            </tbody>
-          </table>
-        ) : <p>Keine Rennläufe erfasst.</p>}
-        {/* Weitere Details hier... */}
+        <div className="modal-header">
+          <h2>{racer?.full_name} <span style={{fontSize: '1rem', color: 'var(--text-light-color)'}}>(#{racer?.start_number || 'N/A'})</span></h2>
+          <button className="modal-close-button" onClick={onClose} aria-label="Schließen">×</button>
+        </div>
+        <div className="modal-body">
+          <p><strong>Team:</strong> {racer?.team_name || 'Einzelstarter'}</p>
+          <p><strong>Klasse:</strong> {racer?.soapbox_class_display}</p>
+          <p><strong>Beste Zeit:</strong> <span style={{fontWeight: 'bold'}}>{formatSecondsToTime(parseTimeToSeconds(racer?.best_time_seconds || null))}s</span></p>
+          {racer?.rank && <p><strong>Platz (Gesamt):</strong> {racer.rank}</p>}
+
+          <h3>Alle Läufe:</h3>
+          {racer?.races && racer.races.length > 0 ? (
+            <div className="table-wrapper">
+              <table className="results-table compact-table">
+                <thead>
+                  <tr>
+                    <th>Lauf</th>
+                    <th>Zeit (s)</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {DISPLAYED_RUN_TYPES_ORDER
+                    .map(runKey => {
+                      const run = racer.races.find(r => r.run_type === runKey);
+                      if (!run) {
+                        return null; 
+                      }
+                      return (
+                        <tr key={`${run.run_type}-${run.run_identifier}`}>
+                          <td>{run.run_type_display} {run.run_identifier > 1 ? run.run_identifier : ''}</td>
+                          <td>{run.disqualified ? 'DQ' : formatSecondsToTime(parseTimeToSeconds(run.time_in_seconds))}</td>
+                          <td>{run.disqualified ? <span style={{color: 'var(--danger-color)'}}>DQ</span> : (run.time_in_seconds ? 'OK' : 'N/A')}</td>
+                        </tr>
+                      );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : <p>Keine Rennläufe erfasst.</p>}
+        </div>
       </div>
     </div>
   );
+
+  if (!isOpen || !racer || !modalRoot) return null;
+
+  return ReactDOM.createPortal(modalContent, modalRoot);
 };
 
+type SortableRacerKey = keyof Pick<RacerFromAPI, 'full_name' | 'team_name' | 'soapbox_class_display' | 'best_time_seconds' | 'rank'> | `time_${RaceRunTypeValue}`;
 
 const ResultsPage: React.FC = () => {
-  const [allRacers, setAllRacers] = useState<RacerFrontend[]>([]);
-  const [filteredRacers, setFilteredRacers] = useState<RacerFrontend[]>([]);
+  const [allRacers, setAllRacers] = useState<RacerFromAPI[]>([]);
+  const [filteredAndSortedRacers, setFilteredAndSortedRacers] = useState<RacerFromAPI[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const [selectedClass, setSelectedClass] = useState<string>(''); // Filter nach Klasse
-  const [sortConfig, setSortConfig] = useState<{ key: keyof RacerFrontend | string; direction: 'ascending' | 'descending' }>({
-    key: 'best_time_seconds', // Standard-Sortierung
+  const [selectedClass, setSelectedClass] = useState<SoapboxClassValue | ''>('');
+  const [sortConfig, setSortConfig] = useState<{ key: SortableRacerKey; direction: 'ascending' | 'descending' }>({
+    key: 'best_time_seconds',
     direction: 'ascending',
   });
-  const [selectedRacer, setSelectedRacer] = useState<RacerFrontend | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRacer, setSelectedRacer] = useState<RacerFromAPI | null>(null);
 
-  const soapboxClasses: SoapboxClassOption[] = useMemo(() => {
-    if (allRacers.length === 0) return [];
-    const classes = new Map<string, string>();
-    allRacers.forEach(racer => {
-      if (!classes.has(racer.soapbox_class)) {
-        classes.set(racer.soapbox_class, racer.soapbox_class_display);
-      }
-    });
-    return Array.from(classes.entries()).map(([value, label]) => ({ value, label }));
-  }, [allRacers]);
-
+  const soapboxClassOptions: SoapboxClassOption[] = useMemo(() => {
+    return Object.entries(SOAPBOX_CLASS_DISPLAY_MAP).map(([value, label]) => ({
+        value: value as SoapboxClassValue,
+        label
+    })).sort((a,b) => a.label.localeCompare(b.label));
+  }, []);
 
   useEffect(() => {
     const fetchRacersData = async () => {
       setLoading(true);
       setError(null);
       try {
-        const params: Record<string, string> = {};
-        if (selectedClass) {
-          params.soapbox_class = selectedClass;
-        }
-        const data = await apiService.getRacers(params);
-        setAllRacers(data); // Speichere alle Racer für client-seitiges Filtern/Sortieren, falls API keine Sortierung hat
-                            // oder passe an, wenn die API Filterung und Sortierung übernimmt.
+        const data = await apiService.getRacers(); 
+        setAllRacers(data);
       } catch (err) {
         console.error("Failed to fetch racers data:", err);
         setError("Teilnehmerdaten konnten nicht geladen werden.");
@@ -125,165 +118,158 @@ const ResultsPage: React.FC = () => {
       }
     };
     fetchRacersData();
-  }, [selectedClass]); // Neu laden, wenn sich der Klassenfilter ändert
+  }, []); 
 
-  // Client-seitige Filterung und Sortierung (kann auch serverseitig erfolgen)
   useEffect(() => {
-    let processedRacers = [...allRacers];
+    let processedRacers = selectedClass ? allRacers.filter(r => r.soapbox_class === selectedClass) : [...allRacers];
 
-    // Rangberechnung bleibt gleich (oder wird hier nicht mehr benötigt, wenn die Sortierung das übernimmt)
-    const racersWithRank = processedRacers
-      .filter(racer => parseTimeToSeconds(racer.best_time_seconds) !== null)
-      .sort((a, b) => {
-        const timeA = parseTimeToSeconds(a.best_time_seconds) ?? Infinity;
-        const timeB = parseTimeToSeconds(b.best_time_seconds) ?? Infinity;
-        return timeA - timeB;
-      })
-      .map((racer, index) => ({ ...racer, rank: index + 1 }));
+    const rankedRacers = processedRacers
+        .filter(r => parseTimeToSeconds(r.best_time_seconds) !== null)
+        .sort((a, b) => (parseTimeToSeconds(a.best_time_seconds) ?? Infinity) - (parseTimeToSeconds(b.best_time_seconds) ?? Infinity))
+        .map((r, index) => ({ ...r, rank: index + 1 }));
 
-    const racersWithoutTime = processedRacers.filter(racer => parseTimeToSeconds(racer.best_time_seconds) === null);
-    let displayRacers = [...racersWithRank, ...racersWithoutTime];
+    const unrankedRacers = processedRacers.filter(r => parseTimeToSeconds(r.best_time_seconds) === null).map(r => ({ ...r, rank: undefined }));
+    
+    processedRacers = [...rankedRacers, ...unrankedRacers];
 
-    // Sortierung
-    if (sortConfig.key) {
-      displayRacers.sort((a, b) => {
-        let valA: any;
-        let valB: any;
+    processedRacers.sort((a, b) => {
+      let valA: string | number | null | undefined;
+      let valB: string | number | null | undefined;
 
-        // Extrahiere die Werte basierend auf dem Sortierschlüssel
-        if (sortConfig.key === 'best_time_seconds' || sortConfig.key.startsWith('time_')) {
-          const getTime = (racer: RacerFrontend, key: string) => {
-            if (key === 'best_time_seconds') return parseTimeToSeconds(racer.best_time_seconds);
-            const [, runType, runIdStr] = key.split('_');
-            const runId = parseInt(runIdStr); // Annahme: runIdStr ist immer eine Zahl
-            const run = racer.races.find(r => r.run_type === runType && r.run_identifier === runId && !r.disqualified);
-            return run ? parseTimeToSeconds(run.time_in_seconds) : null;
-          };
-          valA = getTime(a, sortConfig.key);
-          valB = getTime(b, sortConfig.key);
-        } else if (sortConfig.key === 'full_name') {
-          valA = a.full_name.toLowerCase();
-          valB = b.full_name.toLowerCase();
-        } else if (sortConfig.key === 'rank') {
-          valA = a.rank; // Bereits eine Zahl oder undefined
-          valB = b.rank; // Bereits eine Zahl oder undefined
-        } else if (sortConfig.key === 'soapbox_class_display') {
-          valA = a.soapbox_class_display.toLowerCase();
-          valB = b.soapbox_class_display.toLowerCase();
-        } else if (sortConfig.key === 'team_name') {
-          valA = (a.team_name ?? '').toLowerCase();
-          valB = (b.team_name ?? '').toLowerCase();
-        } else {
-          valA = a[sortConfig.key as keyof RacerFrontend];
-          valB = b[sortConfig.key as keyof RacerFrontend];
+      if (sortConfig.key.startsWith('time_')) {
+        const runType = sortConfig.key.substring(5) as RaceRunTypeValue;
+        const getRunTime = (racer: RacerFromAPI) => {
+          const run = racer.races.find(race => race.run_type === runType && !race.disqualified);
+          return run ? parseTimeToSeconds(run.time_in_seconds) : null;
+        };
+        valA = getRunTime(a);
+        valB = getRunTime(b);
+      } else {
+        const key = sortConfig.key as keyof RacerFromAPI; 
+        const valueA = a[key];
+        const valueB = b[key];
+        valA = Array.isArray(valueA) ? undefined : valueA;
+        valB = Array.isArray(valueB) ? undefined : valueB;
+
+        if (sortConfig.key === 'best_time_seconds') {
+            valA = parseTimeToSeconds(a.best_time_seconds);
+            valB = parseTimeToSeconds(b.best_time_seconds);
+        } else if (sortConfig.key === 'rank') { 
+            valA = a.rank;
+            valB = b.rank;
         }
-
-        // Behandlung von null/undefined für die Sortierung (numerisch und Strings)
-        // Für numerische Sortierung (Zeiten, Rang)
-        if (typeof valA === 'number' || valA === null || valA === undefined) {
-            // Wenn null/undefined, setze auf einen Wert, der sie ans Ende/Anfang sortiert
-            const numA = valA === null || valA === undefined ? (sortConfig.direction === 'ascending' ? Infinity : -Infinity) : valA;
-            const numB = valB === null || valB === undefined ? (sortConfig.direction === 'ascending' ? Infinity : -Infinity) : valB;
-
-            if (numA < numB) return sortConfig.direction === 'ascending' ? -1 : 1;
-            if (numA > numB) return sortConfig.direction === 'ascending' ? 1 : -1;
-            return 0;
-        }
-        // Für String-Sortierung (Name, Klasse)
-        else if (typeof valA === 'string' && typeof valB === 'string') {
-          return sortConfig.direction === 'ascending' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-        }
-        // Fallback, falls Typen gemischt oder unerwartet sind (sollte nicht oft passieren mit TypeScript)
-        return 0;
-      });
-    }
-    setFilteredRacers(displayRacers);
-  }, [allRacers, sortConfig, selectedClass]);
+      }
+      
+      const isAsc = sortConfig.direction === 'ascending';
+      if (valA === null || valA === undefined) return (valB === null || valB === undefined) ? 0 : (isAsc ? 1 : -1);
+      if (valB === null || valB === undefined) return isAsc ? -1 : 1;
 
 
-  const requestSort = (key: keyof RacerFrontend | string) => {
-    let direction: 'ascending' | 'descending' = 'ascending';
-    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    setSortConfig({ key, direction });
-  };
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        return isAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      }
+      if (typeof valA === 'number' && typeof valB === 'number') {
+        return isAsc ? valA - valB : valB - valA;
+      }
+      return 0;
+    });
+    setFilteredAndSortedRacers(processedRacers);
+  }, [allRacers, selectedClass, sortConfig]);
 
-  const getSortIndicator = (key: keyof RacerFrontend | string) => {
+  const requestSort = useCallback((key: SortableRacerKey) => {
+    setSortConfig(prevConfig => ({
+      key,
+      direction: prevConfig.key === key && prevConfig.direction === 'ascending' ? 'descending' : 'ascending',
+    }));
+  }, []);
+
+  const getSortIndicator = useCallback((key: SortableRacerKey) => {
     if (sortConfig.key === key) {
-      return sortConfig.direction === 'ascending' ? ' ▲' : ' ▼';
+      return sortConfig.direction === 'ascending' ? '▲' : '▼';
     }
     return '';
-  };
+  }, [sortConfig]);
 
-  const handleRacerClick = (racer: RacerFrontend) => {
-    setSelectedRacer(racer);
-    setIsModalOpen(true);
-  };
-
-  const getRaceTimeForTable = (racer: RacerFrontend, runType: string, runIdentifier: number = 1) => {
+  const getRaceTimeForTable = useCallback((racer: RacerFromAPI, runType: RaceRunTypeValue, runIdentifier: number = 1) => {
     const raceRun = racer.races.find(r => r.run_type === runType && r.run_identifier === runIdentifier);
     if (!raceRun) return 'N/A';
-    if (raceRun.disqualified) return 'DQ';
+    if (raceRun.disqualified) return <span style={{color: 'var(--danger-color)', fontWeight: 'bold'}}>DQ</span>;
     return formatSecondsToTime(parseTimeToSeconds(raceRun.time_in_seconds));
-  };
+  }, []);
 
-
-  if (loading) return <div className="page-container results-loading">Lade Ergebnisse...</div>;
-  if (error) return <div className="page-container results-error">Fehler: {error}</div>;
+  if (loading) return <div className="page-container results-loading"><p>Lade Rennergebnisse...</p></div>;
+  if (error) return <div className="page-container results-error-message"><p>Fehler: {error}</p></div>;
 
   return (
-    <div className="page-container results-page">
+    <div className="results-page page-enter-animation">
       <h1>Rennergebnisse</h1>
       <div className="filters-container">
-        <label htmlFor="classFilter">Klasse filtern: </label>
-        <select
-          id="classFilter"
-          value={selectedClass}
-          onChange={(e) => setSelectedClass(e.target.value)}
-        >
-          <option value="">Alle Klassen</option>
-          {soapboxClasses.map(sc => (
-            <option key={sc.value} value={sc.value}>{sc.label}</option>
-          ))}
-        </select>
+        <div className="filter-group">
+            <label htmlFor="classFilter">Klasse filtern:</label>
+            <select
+            id="classFilter"
+            className="form-control"
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value as SoapboxClassValue | '')}
+            >
+            <option value="">Alle Klassen</option>
+            {soapboxClassOptions.map(sc => (
+                <option key={sc.value} value={sc.value}>{sc.label}</option>
+            ))}
+            </select>
+        </div>
       </div>
 
-      {filteredRacers.length > 0 ? (
-        <div className="table-responsive">
+      {filteredAndSortedRacers.length > 0 ? (
+        <div className="table-wrapper">
           <table className="results-table">
             <thead>
               <tr>
-                <th onClick={() => requestSort('rank')}>Platz {getSortIndicator('rank')}</th>
-                <th onClick={() => requestSort('full_name')}>Name {getSortIndicator('full_name')}</th>
-                <th onClick={() => requestSort('team_name')}>Team {getSortIndicator('team_name')}</th>
-                <th onClick={() => requestSort('soapbox_class_display')}>Klasse {getSortIndicator('soapbox_class_display')}</th>
-                {Object.entries(RUN_TYPES_ORDER).map(([key, label]) => (
-                    <th key={key} onClick={() => requestSort(`time_${key}_1`)}>{label} {getSortIndicator(`time_${key}_1`)}</th>
+                <th onClick={() => requestSort('rank')} className="sortable-header">
+                  Platz <span className="sort-indicator">{getSortIndicator('rank')}</span>
+                </th>
+                <th onClick={() => requestSort('full_name')} className="sortable-header">
+                  Name <span className="sort-indicator">{getSortIndicator('full_name')}</span>
+                </th>
+                <th onClick={() => requestSort('team_name')} className="sortable-header">
+                  Team <span className="sort-indicator">{getSortIndicator('team_name')}</span>
+                </th>
+                <th onClick={() => requestSort('soapbox_class_display')} className="sortable-header">
+                  Klasse <span className="sort-indicator">{getSortIndicator('soapbox_class_display')}</span>
+                </th>
+                {DISPLAYED_RUN_TYPES_ORDER.map((runTypeKey) => (
+                  <th key={runTypeKey} onClick={() => requestSort(`time_${runTypeKey}`)} className="sortable-header">
+                    {RACE_RUN_TYPE_DISPLAY_MAP[runTypeKey]}
+                    <span className="sort-indicator">{getSortIndicator(`time_${runTypeKey}`)}</span>
+                  </th>
                 ))}
-                <th onClick={() => requestSort('best_time_seconds')}>Beste Zeit {getSortIndicator('best_time_seconds')}</th>
+                <th onClick={() => requestSort('best_time_seconds')} className="sortable-header">
+                  Beste Zeit <span className="sort-indicator">{getSortIndicator('best_time_seconds')}</span>
+                </th>
               </tr>
             </thead>
             <tbody>
-              {filteredRacers.map((racer) => (
-                <tr key={racer.id} onClick={() => handleRacerClick(racer)} className="clickable-row">
-                  <td>{racer.rank || '-'}</td>
+              {filteredAndSortedRacers.map((racer) => (
+                <tr key={racer.id} onClick={() => setSelectedRacer(racer)} className="clickable-row">
+                  <td style={{textAlign: 'center'}}>{racer.rank || '-'}</td>
                   <td>{racer.full_name}</td>
                   <td>{racer.team_name || 'Einzelstarter'}</td>
-                  <td>{racer.soapbox_class_display}</td> {/* Anzeige der Klasse */}
-                  {Object.keys(RUN_TYPES_ORDER).map(runKey => (
+                  <td>{racer.soapbox_class_display}</td>
+                  {DISPLAYED_RUN_TYPES_ORDER.map(runKey => (
                     <td key={`${racer.id}-${runKey}`}>{getRaceTimeForTable(racer, runKey, 1)}</td>
                   ))}
-                  <td>{formatSecondsToTime(parseTimeToSeconds(racer.best_time_seconds))}</td>
+                  <td style={{fontWeight: 'bold'}}>{formatSecondsToTime(parseTimeToSeconds(racer.best_time_seconds))}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       ) : (
-        <p>Keine Teilnehmer für die ausgewählten Filter gefunden.</p>
+        <p style={{marginTop: 'var(--spacing-lg)'}}>
+            {allRacers.length === 0 ? 'Es wurden noch keine Daten geladen oder es sind keine Daten vorhanden.' : 'Keine Teilnehmer für die ausgewählten Filter gefunden.'}
+        </p>
       )}
-      <RacerDetailModal racer={selectedRacer} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <RacerDetailModal racer={selectedRacer} isOpen={!!selectedRacer} onClose={() => setSelectedRacer(null)} />
     </div>
   );
 };
