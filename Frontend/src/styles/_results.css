@@ -1,0 +1,120 @@
+.results-loading,
+.results-error-message {
+  text-align: center;
+  font-size: 1.1rem;
+  padding: var(--spacing-xl) var(--spacing-md);
+  color: var(--text-light-color);
+  border-radius: var(--border-radius-md);
+}
+.results-error-message {
+  background-color: rgba(var(--danger-color-rgb), 0.1);
+  color: var(--danger-color);
+  border: 1px solid rgba(var(--danger-color-rgb), 0.2);
+}
+
+.filters-container {
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background-color: var(--content-background-color);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--box-shadow-sm);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-lg); 
+}
+
+.filters-container .filter-group {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.filters-container label {
+  font-weight: 500;
+  color: var(--text-color);
+  margin-bottom: 0;
+}
+
+.filters-container select.form-control {
+  min-width: 200px; 
+}
+
+/* Modal Styling (Generic, also used by Admin) */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(var(--heading-color-rgb), 0.5); /* Slightly less opaque */
+  display: flex; /* Changed from grid */
+  align-items: flex-start; /* Align modal to top */
+  justify-content: center; /* Keep modal centered horizontally */
+  z-index: var(--z-index-modal-backdrop);
+  padding: 5vh var(--spacing-md) 5vh; /* Vertical padding for top/bottom, horizontal for sides */
+  overflow-y: auto; /* Allows overlay to scroll if modal is very tall */
+}
+
+.modal-content {
+  background: var(--content-background-color);
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--box-shadow-lg);
+  width: 100%;
+  max-width: 600px; /* Default max-width */
+  max-height: calc(90vh - 2 * 5vh); /* Max height considering overlay's top/bottom padding */
+  overflow-y: auto;
+  position: relative; 
+}
+
+/* Specific modal sizes using classes */
+.modal-content-sm { max-width: 400px; }
+.modal-content-md { max-width: 600px; }
+.modal-content-lg { max-width: 800px; }
+
+
+@media (min-width: var(--breakpoint-md)) {
+  .modal-content {
+    padding: var(--spacing-xl);
+  }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    border-bottom: 1px solid var(--border-light-color);
+}
+.modal-header h2 {
+    margin-bottom: 0;
+    font-size: 1.6rem; 
+}
+
+.modal-close-button {
+  font-size: 1.8rem; 
+  font-weight: 300; 
+  line-height: 1;
+  color: var(--text-light-color);
+  background: none;
+  border: none;
+  padding: var(--spacing-xs);
+  transition: color var(--transition-speed-fast) var(--transition-timing), transform var(--transition-speed-fast) var(--transition-timing);
+  position: relative; /* For stacking context */
+  z-index: 10; /* Ensure it's above other elements in header */
+}
+.modal-close-button:hover {
+  color: var(--danger-color);
+  transform: scale(1.1);
+}
+
+.modal-body p {
+  margin-bottom: var(--spacing-sm);
+}
+.modal-body h3 { 
+  font-size: 1.2rem;
+  margin-top: var(--spacing-lg);
+  margin-bottom: var(--spacing-sm);
+  color: var(--heading-color);
+  padding-bottom: var(--spacing-xs);
+  border-bottom: 1px solid var(--border-light-color);
+}

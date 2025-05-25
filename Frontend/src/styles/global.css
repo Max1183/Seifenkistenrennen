@@ -1,8 +1,7 @@
 /*
-  Diese Datei importiert alle anderen CSS-Partial-Dateien.
-  Die Reihenfolge der Imports ist wichtig, da spätere Regeln frühere überschreiben können.
-  Variablen sollten zuerst importiert werden, gefolgt von Resets, dann Basis-Stilen,
-  Layout, Komponenten und schließlich spezifischeren oder Utility-Stilen.
+  This file imports all other CSS partial files.
+  The order of imports is important: variables first, then resets, base styles,
+  layout, components, and finally specific page or utility styles.
 */
 
 @import url('_variables.css');
@@ -12,3 +11,4 @@
 @import url('_components.css');
 @import url('_animations.css');
 @import url('_admin.css');
+@import url('_results.css');

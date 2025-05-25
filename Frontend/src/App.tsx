@@ -1,23 +1,19 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-
 import { AuthProvider } from './contexts/AuthContext';
-
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
-
-// Seiten importieren
-import HomePage from './pages/HomePage'; // Die neue Homepage
+import HomePage from './pages/HomePage';
 import ResultsPage from './pages/ResultsPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
-// Placeholder für About, Privacy, Impressum Seiten
-const AboutPage: React.FC = () => <div className="page-container"><h1>Über Uns</h1><p>Infos über den Veranstalter...</p></div>;
-const PrivacyPage: React.FC = () => <div className="page-container"><h1>Datenschutz</h1><p>Unsere Datenschutzrichtlinien...</p></div>;
-const ImpressumPage: React.FC = () => <div className="page-container"><h1>Impressum</h1><p>Impressumsangaben...</p></div>;
-
 import NotFoundPage from './pages/NotFoundPage';
+// AdminManageRacesPage is not currently linked in navigation, kept for potential future use.
+// import AdminManageRacesPage from './pages/AdminManageRacesPage';
 
+const PlaceholderPage: React.FC<{ title: string; content?: string }> = ({ title, content }) => (
+  <div className="page-container"><h1>{title}</h1><p>{content || `Inhalt für ${title} folgt...`}</p></div>
+);
 
 function App() {
   return (
@@ -25,24 +21,20 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route element={<Layout />}>
-
-            {/* Öffentliche Routen */}
             <Route path="/" element={<HomePage />} />
             <Route path="/results" element={<ResultsPage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/privacy" element={<PrivacyPage />} />
-            <Route path="/impressum" element={<ImpressumPage />} />
+            <Route path="/about" element={<PlaceholderPage title="Über Uns" />} />
+            <Route path="/privacy" element={<PlaceholderPage title="Datenschutz" />} />
+            <Route path="/impressum" element={<PlaceholderPage title="Impressum" />} />
 
-
-            {/* Admin Login Route */}
             <Route path="/admin/login" element={<AdminLoginPage />} />
-
-            {/* Geschützte Admin-Routen */}
             <Route element={<ProtectedRoute />}>
               <Route path="/admin" element={<AdminDashboardPage />} />
+              {/* Example for a future dedicated race management page:
+              <Route path="/admin/races" element={<AdminManageRacesPage />} />
+              */}
             </Route>
 
-            {/* Fallback für nicht gefundene Routen */}
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>

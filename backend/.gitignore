@@ -61,6 +61,7 @@ staticfiles/
 
 # Virtualenv
 .env
+.env.local
 venv/
 env/
 .venv/

@@ -3,25 +3,34 @@ import { Link } from 'react-router-dom';
 
 const HomePage: React.FC = () => {
   return (
-    <div className="page-container">
-      <h1>Willkommen zum Seifenkistenrennen!</h1>
-      <p>
-        Erlebe spannende Abfahrten, kreative Seifenkisten und einen Tag voller Spaß
-        für die ganze Familie. Hier findest du alle wichtigen Informationen
-        rund um das Rennen.
-      </p>
-      <section style={{ marginTop: '2rem', marginBottom: '2rem' }}>
+    <div className="page-container page-enter-animation">
+      <header style={{ textAlign: 'center', marginBottom: 'var(--spacing-xl)' }}>
+        <h1>Willkommen zum Seifenkistenrennen!</h1>
+        <p style={{ fontSize: '1.1rem', color: 'var(--text-light-color)'}}>
+          Erlebe spannende Abfahrten, kreative Seifenkisten und einen Tag voller Spaß
+          für die ganze Familie.
+        </p>
+      </header>
+
+      <section style={{ marginBottom: 'var(--spacing-xl)', lineHeight: '1.7' }}>
         <h2>Über das Rennen</h2>
         <p>
-          Das jährliche Seifenkistenrennen ist ein Highlight für Jung und Alt.
-          Teams aus der ganzen Region treten mit selbstgebauten, nicht motorisierten
-          Fahrzeugen gegeneinander an.
+          Das jährliche Seifenkistenrennen, veranstaltet vom CVJM Weissach, ist ein Highlight für Jung und Alt.
+          Teams und Einzelfahrer aus der Region und darüber hinaus treten mit ihren selbstgebauten, nicht motorisierten
+          Fahrzeugen auf der anspruchsvollen Strecke in Unterweissach gegeneinander an. Bewertet werden nicht nur die Geschwindigkeit,
+          sondern oft auch die Kreativität und Originalität der Gefährte.
         </p>
-        {/* Weitere Infos hier */}
+        <p>
+          Neben den rasanten Läufen erwartet die Besucher ein buntes Rahmenprogramm mit Verpflegung und Unterhaltung.
+          Alle aktuellen Informationen, Zeitpläne und Ergebnisse findest du hier auf unserer Webseite.
+        </p>
       </section>
-      <Link to="/results" className="btn btn-primary">
-        Zu den aktuellen Ergebnissen
-      </Link>
+
+      <div style={{ textAlign: 'center' }}>
+        <Link to="/results" className="btn btn-primary btn-lg">
+          Zu den aktuellen Ergebnissen
+        </Link>
+      </div>
     </div>
   );
 };

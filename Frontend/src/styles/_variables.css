@@ -1,43 +1,77 @@
 /* src/styles/_variables.css */
 :root {
-  /* Farben */
-  --primary-color: #007bff;
-  --primary-hover-color: #0056b3;
-  --secondary-color: #6c757d;
-  --secondary-hover-color: #545b62;
-  --light-color: #f8f9fa;
-  --dark-color: #343a40;
-  --text-color: #212529;
-  --text-muted-color: #6c757d;
-  --border-color: #dee2e6;
-  --background-color: #f8f9fa; /* Hintergrund der gesamten Seite */
-  --content-background-color: #ffffff; /* Hintergrund für .page-container etc. */
+  /* Farben - Modernes, sauberes Schema */
+  --primary-color: #3498db;         /* Helleres, freundliches Blau */
+  --primary-color-rgb: 52, 152, 219;
+  --primary-hover-color: #2980b9;
+  --primary-light-color: #e1f0fa; /* Sehr heller Blauton für Akzente */
 
-  --success-color: #28a745;
-  --danger-color: #dc3545;
-  --warning-color: #ffc107;
-  --info-color: #17a2b8;
+  --secondary-color: #546e7a;       /* Cool Grey for secondary actions/text */
+  --secondary-color-rgb: 84, 110, 122;
+  --secondary-hover-color: #455a64; /* Darker Cool Grey */
+
+  --accent-color: #f39c12; /* Orange für Warnungen oder Akzente */
+  --accent-color-rgb: 243, 156, 18;
+  --accent-hover-color: #e67e22;
+
+  --text-color: #37474f;            /* Dunkelgrau, nicht reines Schwarz */
+  --text-light-color: #78909c; /* Helleres Grau für sekundären Text */
+  --heading-color: #263238;         /* Etwas dunkler für Überschriften */
+  --heading-color-rgb: 38, 50, 56;
+
+  --background-color: #f4f6f8; /* Sehr heller Grauton für den Haupt-Hintergrund */
+  --content-background-color: #ffffff; /* Weiß für Inhaltsblöcke */
+  --border-color: #cfd8dc; /* Subtile Border */
+  --border-light-color: #eceff1;
+
+  --danger-color: #e53935;
+  --danger-color-rgb: 229, 57, 53;
+  --danger-hover-color: #c62828;
+  --success-color: #43a047; /* Konsistent mit Sekundärfarbe */
+  --success-color-rgb: 67, 160, 71;
 
   /* Schriftarten */
-  --font-family-sans-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-family-sans-serif: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   --font-family-monospace: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-
-  /* Größen & Abstände */
-  --base-font-size: 16px;
+  --base-font-size: 16px; /* 1rem */
   --line-height-base: 1.6;
-  --padding-base: 1rem;
-  --margin-base: 1rem;
+
+  /* Abstände & Größen */
+  --spacing-xs: 0.25rem;  /* 4px */
+  --spacing-sm: 0.5rem;   /* 8px */
+  --spacing-md: 1rem;     /* 16px */
+  --spacing-lg: 1.5rem;   /* 24px */
+  --spacing-xl: 2rem;     /* 32px */
+  --spacing-xxl: 3rem;    /* 48px */
+
+  --navbar-height: 60px; /* Standard navbar height */
 
   /* Ränder & Schatten */
-  --border-radius: 0.3rem;
+  --border-radius-sm: 0.25rem;
+  --border-radius-md: 0.375rem;
   --border-radius-lg: 0.5rem;
-  --box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
-  --box-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+
+  --box-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --box-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --box-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
 
   /* Übergänge */
-  --transition-speed: 0.25s;
-  --transition-timing: ease-in-out;
+  --transition-speed-fast: 0.15s;
+  --transition-speed-normal: 0.25s;
+  --transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Navbar */
-  --navbar-height: 60px; /* Beispiel, falls du feste Höhen brauchst */
+  /* Z-Indizes */
+  --z-index-dropdown: 1000;
+  --z-index-sticky: 1020;
+  --z-index-offcanvas: 1030; /* Z-Index für Offcanvas */
+  --z-index-modal-backdrop: 1040;
+  --z-index-modal: 1050;
+  --z-index-tooltip: 1070;
+
+  /* Breakpoints für Responsiveness (Beispiel) */
+  --breakpoint-sm: 576px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 992px;
+  --breakpoint-xl: 1200px;
+  --breakpoint-xxl: 1400px;
 }
