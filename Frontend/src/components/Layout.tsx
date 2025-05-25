@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { NavLink, Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -9,6 +9,10 @@ const Layout: React.FC = () => {
   const auth = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const mobileNavRef = useRef<HTMLDivElement>(null);
+  const mobileToggleRef = useRef<HTMLButtonElement>(null);
+  const mobileCloseBtnRef = useRef<HTMLButtonElement>(null);
+
 
   const toggleMobileMenu = useCallback(() => {
     setIsMobileMenuOpen(prev => {
@@ -23,21 +27,57 @@ const Layout: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (isMobileMenuOpen) { // Only attempt to close if it was open
+    if (isMobileMenuOpen) { 
         toggleMobileMenu();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location]); // Removed isMobileMenuOpen from deps to avoid loop on manual toggle
+    // eslint-disable-next-line react-hooks/exhaustive-deps 
+  }, [location]); 
 
   useEffect(() => {
     const handleEscapeKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isMobileMenuOpen) {
         toggleMobileMenu();
+        mobileToggleRef.current?.focus(); 
       }
     };
+
+    const handleFocusTrap = (event: KeyboardEvent) => {
+      if (event.key === 'Tab' && isMobileMenuOpen && mobileNavRef.current) {
+        const focusableElements = Array.from(
+            mobileNavRef.current.querySelectorAll<HTMLElement>(
+            'a[href]:not([disabled]), button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )
+        ).filter(el => el.offsetParent !== null); // Filter out invisible elements
+
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (event.shiftKey) { 
+          if (document.activeElement === firstElement) {
+            lastElement.focus();
+            event.preventDefault();
+          }
+        } else { 
+          if (document.activeElement === lastElement) {
+            firstElement.focus();
+            event.preventDefault();
+          }
+        }
+      }
+    };
+    
     document.addEventListener('keydown', handleEscapeKey);
+    document.addEventListener('keydown', handleFocusTrap);
+
+    if (isMobileMenuOpen && mobileCloseBtnRef.current) { // Focus the close button first
+        mobileCloseBtnRef.current.focus();
+    }
+
     return () => {
       document.removeEventListener('keydown', handleEscapeKey);
+      document.removeEventListener('keydown', handleFocusTrap);
       document.body.classList.remove('mobile-menu-open'); 
     };
   }, [isMobileMenuOpen, toggleMobileMenu]);
@@ -47,14 +87,13 @@ const Layout: React.FC = () => {
     <div className="app-container">
       <header className="app-header">
         <div className="container">
-          <nav> {/* This nav contains logo, then EITHER desktop links OR mobile toggle */}
+          <nav> 
             <div className="nav-logo">
               <Link to="/">
                 <img src={LOGO_URL} alt="Seifenkistenrennen CVJM Weissach Logo" />
               </Link>
             </div>
 
-            {/* Desktop Links - Styled to be hidden on mobile via CSS */}
             <div className="nav-links-desktop">
               <NavLink to="/">Home</NavLink>
               <NavLink to="/results">Ergebnisse</NavLink>
@@ -71,74 +110,73 @@ const Layout: React.FC = () => {
               )}
             </div>
             
-            {/* Mobile Nav Toggle Button - Styled to be visible on mobile via CSS */}
             <button
+              ref={mobileToggleRef}
               className="mobile-nav-toggle"
-              aria-label="Navigation öffnen/schließen"
+              aria-label="Navigation öffnen"
               aria-expanded={isMobileMenuOpen}
               aria-controls="mobile-nav-links-container"
               onClick={toggleMobileMenu}
             >
-              {isMobileMenuOpen ? '✕' : '☰'}
+              ☰ {/* Hamburger Icon */}
             </button>
           </nav>
         </div>
       </header>
 
-      {/* Off-Canvas Mobile Menu */}
       <div 
+        ref={mobileNavRef}
         id="mobile-nav-links-container" 
         className={`nav-links-mobile ${isMobileMenuOpen ? 'open' : ''}`}
         aria-hidden={!isMobileMenuOpen}
-        // Trap focus within the mobile menu when open (basic example)
-        // For full accessibility, a more robust focus trapping library might be needed
-        onKeyDown={(e) => {
-          if (e.key === 'Tab' && isMobileMenuOpen) {
-            const focusableElements = (e.currentTarget as HTMLElement).querySelectorAll(
-              'a[href], button:not([disabled])'
-            );
-            const firstElement = focusableElements[0] as HTMLElement;
-            const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
-
-            if (e.shiftKey) { // Shift + Tab
-              if (document.activeElement === firstElement) {
-                lastElement.focus();
-                e.preventDefault();
-              }
-            } else { // Tab
-              if (document.activeElement === lastElement) {
-                firstElement.focus();
-                e.preventDefault();
-              }
-            }
-          }
-        }}
+        role="dialog" 
+        aria-modal="true" 
+        aria-labelledby="mobile-menu-heading" 
       >
-        {/* Ensure the first focusable item can receive focus when menu opens */}
-        <NavLink to="/" onClick={toggleMobileMenu} ref={isMobileMenuOpen ? (el) => el?.focus() : null}>Home</NavLink>
-        <NavLink to="/results" onClick={toggleMobileMenu}>Ergebnisse</NavLink>
-        {auth?.isAuthenticated && (
-          <NavLink to="/admin" onClick={toggleMobileMenu}>Admin</NavLink>
-        )}
-        <a href={CVJM_WEBSITE_URL} target="_blank" rel="noopener noreferrer" onClick={toggleMobileMenu}>
-          CVJM Seite
-        </a>
-        {auth?.isAuthenticated && (
-          <button onClick={() => { auth.logout(); toggleMobileMenu(); }} className="btn btn-sm btn-logout">
-            Logout
-          </button>
-        )}
+        <div className="nav-links-mobile-header">
+            <span id="mobile-menu-heading" className="nav-links-mobile-title">Menü</span>
+            <button 
+                ref={mobileCloseBtnRef}
+                onClick={toggleMobileMenu} 
+                aria-label="Navigation schließen"
+                className="nav-links-mobile-close-btn"
+            >
+                ✕
+            </button>
+        </div>
+        
+        <div className="nav-links-mobile-list">
+            <NavLink to="/" onClick={toggleMobileMenu}>Home</NavLink>
+            <NavLink to="/results" onClick={toggleMobileMenu}>Ergebnisse</NavLink>
+            {auth?.isAuthenticated && (
+            <NavLink to="/admin" onClick={toggleMobileMenu}>Admin</NavLink>
+            )}
+            <a href={CVJM_WEBSITE_URL} target="_blank" rel="noopener noreferrer" onClick={toggleMobileMenu}>
+            CVJM Seite
+            </a>
+            {auth?.isAuthenticated && (
+            <button 
+                onClick={() => { 
+                    auth.logout(); 
+                    // toggleMobileMenu(); // Wird durch Location-Change geschlossen
+                }} 
+                className="btn btn-sm btn-logout"
+            >
+                Logout
+            </button>
+            )}
+        </div>
       </div>
 
-      {/* Overlay for mobile menu */}
       {isMobileMenuOpen && (
         <div 
           className="mobile-menu-overlay open"
           onClick={toggleMobileMenu}
           aria-hidden="true"
+          role="button" 
+          tabIndex={-1} 
         />
       )}
-
 
       <main className="app-main-content">
         <div className="container"> 

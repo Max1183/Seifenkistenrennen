@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import ReactDOM from 'react-dom'; // Import ReactDOM for Portals
+import ReactDOM from 'react-dom'; 
 import apiService from '../services/apiService';
-import type { RacerFromAPI, SoapboxClassOption } from '../types';
+import type { RacerFromAPI, SoapboxClassOption } from '../types'; 
 import {
   SOAPBOX_CLASS_DISPLAY_MAP,
   type SoapboxClassValue,
@@ -21,11 +21,15 @@ const formatSecondsToTime = (totalSeconds: number | null | undefined): string =>
   return totalSeconds.toFixed(3);
 };
 
+// Spezieller Wert für den Filter "Einzelstarter"
+const SOLO_RACER_FILTER_VALUE = 'SOLO_RACERS_FILTER';
+
 interface RacerDetailModalProps {
   racer: RacerFromAPI | null;
   isOpen: boolean;
   onClose: () => void;
 }
+
 const RacerDetailModal: React.FC<RacerDetailModalProps> = ({ racer, isOpen, onClose }) => {
   const modalRoot = document.getElementById('modal-root');
 
@@ -84,12 +88,20 @@ const RacerDetailModal: React.FC<RacerDetailModalProps> = ({ racer, isOpen, onCl
 
 type SortableRacerKey = keyof Pick<RacerFromAPI, 'full_name' | 'team_name' | 'soapbox_class_display' | 'best_time_seconds' | 'rank'> | `time_${RaceRunTypeValue}`;
 
+interface TeamOption {
+    value: number | '' | typeof SOLO_RACER_FILTER_VALUE; // Team ID, leer für "Alle", oder spezieller String
+    label: string;
+}
+
 const ResultsPage: React.FC = () => {
   const [allRacers, setAllRacers] = useState<RacerFromAPI[]>([]);
   const [filteredAndSortedRacers, setFilteredAndSortedRacers] = useState<RacerFromAPI[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
   const [selectedClass, setSelectedClass] = useState<SoapboxClassValue | ''>('');
+  const [selectedTeam, setSelectedTeam] = useState<number | '' | typeof SOLO_RACER_FILTER_VALUE>(''); // State für Team-Filter angepasst
+
   const [sortConfig, setSortConfig] = useState<{ key: SortableRacerKey; direction: 'ascending' | 'descending' }>({
     key: 'best_time_seconds',
     direction: 'ascending',
@@ -102,6 +114,36 @@ const ResultsPage: React.FC = () => {
         label
     })).sort((a,b) => a.label.localeCompare(b.label));
   }, []);
+
+  const teamOptions: TeamOption[] = useMemo(() => {
+    if (!allRacers.length) return [];
+    const teamsMap = new Map<number, string>();
+    let hasSoloRacers = false;
+    allRacers.forEach(racer => {
+        if (racer.team && racer.team_name) {
+            teamsMap.set(racer.team, racer.team_name);
+        } else if (racer.team === null) {
+            hasSoloRacers = true;
+        }
+    });
+    
+    const options: TeamOption[] = Array.from(teamsMap.entries()).map(([id, name]) => ({
+        value: id,
+        label: name
+    }));
+
+    if (hasSoloRacers) {
+        options.push({ value: SOLO_RACER_FILTER_VALUE, label: 'Einzelstarter' });
+    }
+    
+    return options.sort((a, b) => {
+        // "Einzelstarter" ans Ende der Teamliste (oder an den Anfang, je nach Präferenz)
+        if (a.value === SOLO_RACER_FILTER_VALUE) return 1;
+        if (b.value === SOLO_RACER_FILTER_VALUE) return -1;
+        return a.label.localeCompare(b.label);
+    });
+  }, [allRacers]);
+
 
   useEffect(() => {
     const fetchRacersData = async () => {
@@ -121,7 +163,17 @@ const ResultsPage: React.FC = () => {
   }, []); 
 
   useEffect(() => {
-    let processedRacers = selectedClass ? allRacers.filter(r => r.soapbox_class === selectedClass) : [...allRacers];
+    let processedRacers = [...allRacers];
+
+    if (selectedClass) {
+        processedRacers = processedRacers.filter(r => r.soapbox_class === selectedClass);
+    }
+
+    if (selectedTeam === SOLO_RACER_FILTER_VALUE) {
+        processedRacers = processedRacers.filter(r => r.team === null);
+    } else if (selectedTeam !== '') { 
+        processedRacers = processedRacers.filter(r => r.team === selectedTeam);
+    }
 
     const rankedRacers = processedRacers
         .filter(r => parseTimeToSeconds(r.best_time_seconds) !== null)
@@ -174,7 +226,7 @@ const ResultsPage: React.FC = () => {
       return 0;
     });
     setFilteredAndSortedRacers(processedRacers);
-  }, [allRacers, selectedClass, sortConfig]);
+  }, [allRacers, selectedClass, selectedTeam, sortConfig]);
 
   const requestSort = useCallback((key: SortableRacerKey) => {
     setSortConfig(prevConfig => ({
@@ -197,6 +249,17 @@ const ResultsPage: React.FC = () => {
     return formatSecondsToTime(parseTimeToSeconds(raceRun.time_in_seconds));
   }, []);
 
+  const handleTeamChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    if (value === '') {
+        setSelectedTeam('');
+    } else if (value === SOLO_RACER_FILTER_VALUE) {
+        setSelectedTeam(SOLO_RACER_FILTER_VALUE);
+    } else {
+        setSelectedTeam(Number(value));
+    }
+  };
+
   if (loading) return <div className="page-container results-loading"><p>Lade Rennergebnisse...</p></div>;
   if (error) return <div className="page-container results-error-message"><p>Fehler: {error}</p></div>;
 
@@ -215,6 +278,20 @@ const ResultsPage: React.FC = () => {
             <option value="">Alle Klassen</option>
             {soapboxClassOptions.map(sc => (
                 <option key={sc.value} value={sc.value}>{sc.label}</option>
+            ))}
+            </select>
+        </div>
+        <div className="filter-group">
+            <label htmlFor="teamFilter">Team filtern:</label>
+            <select
+            id="teamFilter"
+            className="form-control"
+            value={selectedTeam} // Kann jetzt '', number oder SOLO_RACER_FILTER_VALUE sein
+            onChange={handleTeamChange}
+            >
+            <option value="">Alle Teams</option>
+            {teamOptions.map(team => (
+                <option key={team.value.toString()} value={team.value}>{team.label}</option>
             ))}
             </select>
         </div>
@@ -266,7 +343,8 @@ const ResultsPage: React.FC = () => {
         </div>
       ) : (
         <p style={{marginTop: 'var(--spacing-lg)'}}>
-            {allRacers.length === 0 ? 'Es wurden noch keine Daten geladen oder es sind keine Daten vorhanden.' : 'Keine Teilnehmer für die ausgewählten Filter gefunden.'}
+            {allRacers.length === 0 && !loading ? 'Es wurden noch keine Daten geladen oder es sind keine Daten vorhanden.' : 
+             !loading ? 'Keine Teilnehmer für die ausgewählten Filter gefunden.' : ''}
         </p>
       )}
       <RacerDetailModal racer={selectedRacer} isOpen={!!selectedRacer} onClose={() => setSelectedRacer(null)} />

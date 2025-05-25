@@ -120,7 +120,6 @@ class RaceRun(models.Model):
     )
     recorded_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Recorded At"))
 
-
     class Meta:
         verbose_name = _("Race Run")
         verbose_name_plural = _("Race Runs")

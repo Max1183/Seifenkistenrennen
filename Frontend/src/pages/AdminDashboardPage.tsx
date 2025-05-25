@@ -6,11 +6,11 @@ import type {
   TeamFromAPI,
   RacerFromAPI,
   TeamFormData,
-  RacerFormData,
+  RacerFormData, // This type will be updated (date_of_birth removed)
   RaceRunFormData,
   RaceRunFromAPI,
   SoapboxClassOption
-} from '../types';
+} from '../types'; // Ensure this path is correct and types.ts is updated
 import {
   SOAPBOX_CLASS_VALUES,
   SOAPBOX_CLASS_DISPLAY_MAP,
@@ -66,14 +66,15 @@ const AdminDashboardPage: React.FC = () => {
 
   const [racers, setRacers] = useState<RacerFromAPI[]>([]);
   const [loadingRacers, setLoadingRacers] = useState(false);
-  const [racerForm, setRacerForm] = useState<RacerFormData>({
+  // Initial state for racerForm without date_of_birth
+  const initialRacerFormState: RacerFormData = {
     first_name: '',
     last_name: '',
     soapbox_class: SOAPBOX_CLASS_VALUES.UNKNOWN,
-    date_of_birth: '',
     team: '',
     start_number: ''
-  });
+  };
+  const [racerForm, setRacerForm] = useState<RacerFormData>(initialRacerFormState);
   const [editingRacer, setEditingRacer] = useState<RacerFromAPI | null>(null);
 
   const [raceRuns, setRaceRuns] = useState<RaceRunFromAPI[]>([]);
@@ -177,12 +178,14 @@ const AdminDashboardPage: React.FC = () => {
       setTeamForm(data ? { name: data.name } : { name: '' });
     } else if (type === 'racer') {
       setEditingRacer(data);
+      // Set racerForm state without date_of_birth
       setRacerForm(data ? {
-        first_name: data.first_name, last_name: data.last_name,
+        first_name: data.first_name, 
+        last_name: data.last_name,
         soapbox_class: data.soapbox_class,
-        date_of_birth: data.date_of_birth ? data.date_of_birth.split('T')[0] : '', 
-        team: data.team || '', start_number: data.start_number || ''
-      } : { first_name: '', last_name: '', soapbox_class: SOAPBOX_CLASS_VALUES.UNKNOWN, date_of_birth: '', team: '', start_number: '' });
+        team: data.team || '', 
+        start_number: data.start_number || ''
+      } : initialRacerFormState);
     } else if (type === 'racerun') {
         setEditingRaceRun(data);
         const defaultRacerId = racers.length > 0 ? racers[0].id : 0;
@@ -212,9 +215,11 @@ const AdminDashboardPage: React.FC = () => {
         editingTeam ? await apiService.updateTeam(editingTeam.id, teamForm) : await apiService.createTeam(teamForm);
       } else if (modalType === 'racer') {
         if (!racerForm.first_name.trim() || !racerForm.last_name.trim()) { setErrorAlert("Vor- und Nachname sind erforderlich."); return; }
-        if (!racerForm.date_of_birth) { setErrorAlert("Geburtsdatum ist erforderlich."); return; }
+        // Create payload for racer without date_of_birth
         const racerPayload: RacerFormData = {
-            ...racerForm,
+            first_name: racerForm.first_name,
+            last_name: racerForm.last_name,
+            soapbox_class: racerForm.soapbox_class,
             team: racerForm.team === '' ? null : Number(racerForm.team),
             start_number: racerForm.start_number?.trim() || null,
         };
@@ -298,7 +303,8 @@ const AdminDashboardPage: React.FC = () => {
       {!loadingRacers && racers.length > 0 && (
         <div className="table-wrapper">
         <table className="results-table">
-          <thead><tr><th>Name</th><th>Startnr.</th><th>Klasse</th><th>Team</th><th>Geb.-Datum</th><th>Aktionen</th></tr></thead>
+          {/* Removed "Geb.-Datum" column header */}
+          <thead><tr><th>Name</th><th>Startnr.</th><th>Klasse</th><th>Team</th><th>Aktionen</th></tr></thead>
           <tbody>
             {racers.sort((a,b) => a.full_name.localeCompare(b.full_name)).map(racer => (
               <tr key={racer.id}>
@@ -306,7 +312,7 @@ const AdminDashboardPage: React.FC = () => {
                 <td style={{textAlign: 'center'}}>{racer.start_number || '-'}</td>
                 <td>{racer.soapbox_class_display}</td>
                 <td>{racer.team_name || 'Einzelstarter'}</td>
-                <td>{racer.date_of_birth ? new Date(racer.date_of_birth).toLocaleDateString('de-DE') : '-'}</td>
+                {/* Removed racer.date_of_birth display */}
                 <td>
                   <button className="btn btn-sm btn-outline-primary" style={{marginRight: 'var(--spacing-sm)'}} onClick={() => openModal('racer', racer)}>Bearbeiten</button>
                   <button className="btn btn-sm btn-danger" onClick={() => handleDelete('racer', racer.id)}>Löschen</button>
@@ -392,14 +398,15 @@ const renderRaceRunTabContent = () => (
               </div>
               <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 'var(--spacing-md)'}}>
                 <div className="form-group"><label htmlFor="racerStartNumberModal">Startnummer:</label><input type="text" id="racerStartNumberModal" name="start_number" className="form-control" value={racerForm.start_number || ''} onChange={e => handleFormChange(e, 'racer')} /></div>
-                <div className="form-group"><label htmlFor="racerDobModal">Geburtsdatum:</label><input type="date" id="racerDobModal" name="date_of_birth" className="form-control" value={racerForm.date_of_birth} onChange={e => handleFormChange(e, 'racer')} required /></div>
+                {/* Geburtsdatum Input-Feld entfernt */}
+                <div className="form-group">
+                  <label htmlFor="racerSoapboxClassModal">Klasse:</label>
+                  <select id="racerSoapboxClassModal" name="soapbox_class" className="form-control" value={racerForm.soapbox_class} onChange={e => handleFormChange(e, 'racer')}>
+                      {soapboxClassOptionsForAdmin.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                  </select>
+                </div>
               </div>
-              <div className="form-group">
-                <label htmlFor="racerSoapboxClassModal">Klasse:</label>
-                <select id="racerSoapboxClassModal" name="soapbox_class" className="form-control" value={racerForm.soapbox_class} onChange={e => handleFormChange(e, 'racer')}>
-                    {soapboxClassOptionsForAdmin.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                </select>
-              </div>
+              
               <div className="form-group">
                 <label htmlFor="racerTeamModal">Team:</label>
                 <select id="racerTeamModal" name="team" className="form-control" value={racerForm.team || ''} onChange={e => handleFormChange(e, 'racer')}>

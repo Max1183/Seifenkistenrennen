@@ -1,9 +1,3 @@
-/* src/styles/_results.css */
-
-.results-page {
-  /* animation applied by .page-enter-animation if desired */
-}
-
 .results-loading,
 .results-error-message {
   text-align: center;
