@@ -26,7 +26,7 @@ class RaceRunSerializer(serializers.ModelSerializer):
 
 class RacerSerializer(serializers.ModelSerializer):
     team_name = serializers.CharField(source='team.name', read_only=True, allow_null=True)
-    best_time_seconds = serializers.DecimalField(max_digits=6, decimal_places=3, read_only=True)
+    best_time_seconds = serializers.DecimalField(max_digits=6, decimal_places=3, read_only=True, allow_null=True)
     soapbox_class_display = serializers.CharField(source='get_soapbox_class_display', read_only=True)
     races = RaceRunSerializer(many=True, read_only=True)
 
@@ -44,6 +44,8 @@ class RacerSerializer(serializers.ModelSerializer):
             'start_number',
             'best_time_seconds',
             'races',
+            'created_at',
+            'updated_at',
         ]
         read_only_fields = ['id', 'full_name', 'best_time_seconds', 'team_name', 'soapbox_class_display', 'races']
 
@@ -59,6 +61,8 @@ class TeamSerializer(serializers.ModelSerializer):
             'name',
             'racer_count',
             'racers_info',
+            'created_at',
+            'updated_at',
         ]
         read_only_fields = ['id', 'racer_count', 'racers_info']
 
@@ -69,19 +73,25 @@ class TeamSerializer(serializers.ModelSerializer):
 class TeamWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Team
-        fields = ['name']
+        fields = [
+            'id',
+            'name',
+        ]
+        read_only_fields = ['id']
 
 
 class RacerWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Racer
         fields = [
+            'id',
             'first_name',
             'last_name',
             'soapbox_class',
             'team',
             'start_number',
         ]
+        read_only_fields = ['id']
 
 
 class RaceRunWriteSerializer(serializers.ModelSerializer):
