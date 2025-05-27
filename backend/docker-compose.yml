@@ -1,40 +1,35 @@
 services:
-  # Django Backend Service
   web:
     build:
-      context: . # Das Dockerfile befindet sich im aktuellen Verzeichnis
+      context: .
       dockerfile: Dockerfile
-    # image: dein_benutzername/seifenkisten-backend # Optional: Name für das gebaute Image
-    command: gunicorn --bind 0.0.0.0:8000 backend.wsgi:application # Überschreibt CMD im Dockerfile, falls nötig
-    # Alternativ für Entwicklung mit automatischem Reload:
-    # command: python manage.py runserver 0.0.0.0:8000
+    command: gunicorn --bind 0.0.0.0:8000 backend.wsgi:application
     volumes:
-      - .:/app # Mountet das aktuelle Verzeichnis in /app im Container (gut für Entwicklung, um Code-Änderungen live zu sehen)
-      # - static_volume:/app/staticfiles # Für statische Dateien in Produktion (siehe unten)
-      # - media_volume:/app/mediafiles # Für Mediendateien in Produktion (siehe unten)
+      - .:/app
     ports:
-      - "8000:8000" # Mappt Port 8000 des Hosts auf Port 8000 des Containers
+      - "8000:8000"
     env_file:
-      - .env # Lädt Umgebungsvariablen aus der .env-Datei
+      - .env
     depends_on:
-      - db # Stellt sicher, dass der db-Service vor dem web-Service gestartet wird
-    restart: unless-stopped # Startet den Container neu, es sei denn, er wurde manuell gestoppt
+      - db
+    restart: unless-stopped
 
-  # PostgreSQL Datenbank Service
   db:
-    image: postgres:14-alpine # Verwende ein offizielles PostgreSQL-Image (alpine ist kleiner)
+    image: postgres:14-alpine
     volumes:
-      - postgres_data:/var/lib/postgresql/data/ # Persistiert die Datenbankdaten auf dem Host
+      - postgres_data:/var/lib/postgresql/data/
     environment:
-      # Diese Variablen müssen mit denen in deiner Django settings.py (.env Datei) übereinstimmen
       - POSTGRES_DB=${DB_NAME}
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
     ports:
-      - "5432:5432" # Optional: Mappt den PostgreSQL-Port auf den Host (für direkten DB-Zugriff)
+      - "5432:5432"
     restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
-  postgres_data: # Definiert das benannte Volume für die Datenbankpersistenz
-  # static_volume: # Für die Produktion
-  # media_volume:  # Für die Produktion
+  postgres_data:

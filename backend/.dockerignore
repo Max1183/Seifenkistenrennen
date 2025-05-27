@@ -5,12 +5,14 @@
 # Docker
 Dockerfile
 .dockerignore
+docker-compose.yml
 
 # Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.Python
 venv/
 .env
 env/
@@ -25,9 +27,11 @@ ENV/
 # Django
 db.sqlite3
 db.sqlite3-journal
-media/ # Normalerweise nicht im Image, es sei denn, du hast einen speziellen Grund
-staticfiles/ # Werden oft im Container mit collectstatic generiert
+media/
+static/
+staticfiles_collected/
 
 # Sonstiges
 *.log
 local_settings.py
+*.md
