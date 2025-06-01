@@ -1,8 +1,28 @@
 # Seifenkistenrennen Manager 🏁
 
-Willkommen beim Seifenkistenrennen Manager! Diese Webanwendung ermöglicht die Erfassung, Verwaltung und Anzeige von Ergebnissen für Seifenkistenrennen. Sie besteht aus einem React-Frontend für eine ansprechende Benutzererfahrung und einem robusten Django-Backend mit einer PostgreSQL-Datenbank zur Datenhaltung.
+Willkommen beim Seifenkistenrennen Manager! Diese Webanwendung ermöglicht die Erfassung, Verwaltung und Anzeige von Ergebnissen für Seifenkistenrennen. Sie besteht aus einem React-Frontend für eine ansprechende Benutzererfahrung und einem robusten Django-Backend mit einer PostgreSQL-Datenbank zur Datenhaltung. Außerdem verfügt sie über einen Python-Client für die Kommunikation mit dem Backend.
 
 [![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+## Inhaltsverzeichnis
+
+-   [✨ Features](#-features)
+-   [🚀 Schnellstart & Installation](#-schnellstart--installation)
+    -   [Voraussetzungen](#voraussetzungen)
+    -   [1. Repository klonen](#1-repository-klonen)
+    -   [2. Backend Setup (mit Docker Compose - Empfohlen)](#2-backend-setup-mit-docker-compose---empfohlen)
+    -   [3. Backend Setup (Lokal ohne Docker)](#3-backend-setup-lokal-ohne-docker)
+    -   [4. Frontend Setup](#4-frontend-setup)
+-   [🛠️ Verwendung](#️-verwendung)
+-   [🧪 Tests](#-tests)
+    -   [Backend Tests](#backend-tests)
+    -   [Frontend Tests](#frontend-tests)
+-   [🚢 Deployment](#-deployment)
+    -   [Backend (mit Docker)](#backend-mit-docker)
+    -   [Frontend](#frontend)
+-   [🔄 Git Workflow (Beispiel)](#-git-workflow-beispiel)
+-   [🤝 Contributing](#-contributing)
+-   [📜 Lizenz](#-lizenz)
 
 ## ✨ Features
 
@@ -17,15 +37,15 @@ Willkommen beim Seifenkistenrennen Manager! Diese Webanwendung ermöglicht die E
     -   **Datenbank:** PostgreSQL für zuverlässige Datenspeicherung.
 -   **Docker-Unterstützung:** Vereinfachte Entwicklung und konsistentes Deployment dank Dockerisierung des Backends und der Datenbank.
 -   **Sichere Authentifizierung:** JWT-basierte Authentifizierung für den Admin-Bereich.
--   **Responsive Design:** (Ziel) Gute Darstellung auf verschiedenen Bildschirmgrößen.
--   **(Optional) Python-Client:** Möglichkeit, Ergebnisse über einen separaten Python-Client an die API zu senden.
+-   **Responsive Design:** Gute Darstellung auf verschiedenen Bildschirmgrößen.
+-   **Python-Client:** Möglichkeit, Ergebnisse über einen separaten Python-Client an die API zu senden.
 
 ## 🚀 Schnellstart & Installation
 
 ### Voraussetzungen
 
 -   [Git](https://git-scm.com/)
--   [Node.js](https://nodejs.org/) (Version 18.x oder höher empfohlen) und [npm](https://www.npmjs.com/) (oder Yarn/pnpm)
+-   [Node.js](https://nodejs.org/) (aktuellste LTS-Version oder höher empfohlen) und [npm](https://www.npmjs.com/) (oder Yarn/pnpm)
 -   [Python](https://www.python.org/) (Version 3.9 oder höher empfohlen)
 -   [Poetry](https://python-poetry.org/) für die Python-Abhängigkeitsverwaltung im Backend.
 -   [Docker](https://www.docker.com/get-started) und [Docker Compose](https://docs.docker.com/compose/install/) (für die Docker-basierte Einrichtung)
@@ -43,7 +63,7 @@ Diese Methode startet das Django-Backend und eine PostgreSQL-Datenbank in Docker
 
 1.  **Navigiere in den Backend-Ordner:**
     ```bash
-    cd backend_django
+    cd backend
     ```
 2.  **Umgebungsvariablen konfigurieren:**
     Kopiere die Beispiel-Umgebungsdatei und passe sie bei Bedarf an. Die Standardwerte sind für die Docker-Compose-Einrichtung optimiert.
@@ -57,16 +77,6 @@ Diese Methode startet das Django-Backend und eine PostgreSQL-Datenbank in Docker
     ```
     -   `-d` startet die Container im Hintergrund.
     -   `--build` erzwingt den Neuaufbau der Images, falls Änderungen am `Dockerfile` oder den Quellcode-Abhängigkeiten vorgenommen wurden.
-4.  **Datenbankmigrationen ausführen:**
-    ```bash
-    docker-compose exec web python manage.py makemigrations race_core
-    docker-compose exec web python manage.py migrate
-    ```
-5.  **Superuser erstellen (für den Admin-Zugang):**
-    ```bash
-    docker-compose exec web python manage.py createsuperuser
-    ```
-    Folge den Anweisungen, um einen Administrator-Account anzulegen.
 
 Das Backend ist nun unter `http://localhost:8000` erreichbar.
 
@@ -76,7 +86,7 @@ Falls du das Backend lieber direkt auf deinem System ohne Docker betreiben möch
 
 1.  **Navigiere in den Backend-Ordner:**
     ```bash
-    cd backend_django
+    cd backend
     ```
 2.  **Virtuelle Umgebung erstellen und aktivieren (mit Poetry):**
     ```bash
@@ -87,55 +97,62 @@ Falls du das Backend lieber direkt auf deinem System ohne Docker betreiben möch
     poetry install
     ```
 4.  **Umgebungsvariablen konfigurieren:**
-    Kopiere die Beispiel-Umgebungsdatei für die lokale Entwicklung (falls vorhanden, sonst `.env.example` anpassen):
+    Kopiere die Beispiel-Umgebungsdatei und passe sie für die lokale Entwicklung an:
     ```bash
-    cp .env.local.example .env.local  # Und cp .env.example .env
+    cp .env.example .env
     ```
-    Bearbeite .env.local und .env und stelle sicher, dass DB_HOST auf 'localhost' oder deine lokale PostgreSQL-IP zeigt.
-    Stelle sicher, dass deine settings.py .env.local oder die entsprechenden lokalen Einstellungen lädt.
+    Bearbeite die `.env`-Datei. Stelle sicher, dass `DB_HOST` auf `localhost` oder deine lokale PostgreSQL-IP zeigt und die Datenbank-Credentials korrekt sind.
+    _Hinweis: Deine `settings.py` muss so konfiguriert sein, dass sie Variablen aus dieser `.env`-Datei lädt (z.B. mittels `python-decouple` oder `django-environ`)._
 5.  **PostgreSQL Datenbank einrichten:**
-    Stelle sicher, dass du eine lokale PostgreSQL-Instanz laufen hast und eine Datenbank sowie einen Benutzer gemäß den Angaben in deiner `.env.local` (oder `.env`) Datei erstellt hast.
+    Stelle sicher, dass du eine lokale PostgreSQL-Instanz laufen hast und eine Datenbank sowie einen Benutzer gemäß den Angaben in deiner `.env`-Datei erstellt hast.
 6.  **Datenbankmigrationen ausführen:**
     ```bash
     poetry run python manage.py migrate
     ```
 7.  **Superuser erstellen:**
+    Dieser benutzerdefinierte Befehl erstellt einen Superuser mit Standard-Credentials (siehe Code) oder fragt diese ab.
+    ```bash
+    poetry run python manage.py create_initial_superuser
+    ```
+    Alternativ kannst du den Standard-Django-Befehl verwenden:
     ```bash
     poetry run python manage.py createsuperuser
     ```
 8.  **Entwicklungsserver starten:**
-    `bash
+    ```bash
     poetry run python manage.py runserver
-    `
+    ```
     Das Backend ist nun unter `http://localhost:8000` erreichbar.
 
 ### 4. Frontend Setup
 
 1.  **Navigiere in den Frontend-Ordner (vom Projekt-Root aus):**
     ```bash
-    cd frontend_react
+    cd Frontend
+    # Falls dein React-Projekt in einem Unterordner wie 'frontend_react' innerhalb von 'Frontend' liegt,
+    # dann navigiere dorthin: cd Frontend/frontend_react
     ```
 2.  **Abhängigkeiten installieren:**
     ```bash
     npm install
     ```
-3.  **Umgebungsvariablen konfigurieren (optional):**
-    Das Frontend erwartet die Backend-API unter einer bestimmten URL. Standardmäßig ist dies `http://127.0.0.1:8000/api`. Falls abweichend, erstelle eine `.env`-Datei im `frontend_react`-Ordner:
+3.  **Umgebungsvariablen konfigurieren:**
+    Das Frontend erwartet die Backend-API unter einer bestimmten URL. Standardmäßig ist dies `http://127.0.0.1:8000/api`. Falls abweichend, erstelle eine `.env`-Datei im Wurzelverzeichnis deines Frontend-Projekts (z.B. `Frontend/.env`):
     ```dotenv
-    # frontend_react/.env
+    # Frontend/.env
     VITE_API_BASE_URL=http://localhost:8000/api
     ```
 4.  **Entwicklungsserver starten:**
-    `bash
+    ```bash
     npm run dev
-    `
-    Das Frontend ist nun üblicherweise unter `http://localhost:5173` (Vite) oder `http://localhost:3000` (Create React App) erreichbar.
+    ```
+    Das Frontend ist nun unter `http://localhost:3000` (oder der von Vite/React angezeigten Adresse) erreichbar.
 
 ## 🛠️ Verwendung
 
--   **Öffentliche Seite:** Navigiere zur URL des Frontend-Entwicklungsservers (z.B. `http://localhost:5173`), um die Rennergebnisse und Informationen einzusehen.
+-   **Öffentliche Seite:** Navigiere zur URL des Frontend-Entwicklungsservers (z.B. `http://localhost:3000`), um die Rennergebnisse und Informationen einzusehen.
 -   **Admin-Bereich:**
-    -   Greife auf `/admin/login` zu (z.B. `http://localhost:5173/admin/login`).
+    -   Greife auf `/admin` zu (z.B. `http://localhost:3000/admin`).
     -   Melde dich mit den zuvor erstellten Superuser-Anmeldedaten an.
     -   Verwalte Teams, Teilnehmer und Ergebnisse über das Admin-Dashboard.
 -   **Django Admin Interface:** Das traditionelle Django Admin Interface ist unter `http://localhost:8000/admin/` (wenn das Backend läuft) verfügbar und kann für direkte Datenmanipulationen genutzt werden.
@@ -144,19 +161,20 @@ Falls du das Backend lieber direkt auf deinem System ohne Docker betreiben möch
 
 ### Backend Tests
 
-1.  **Navigiere in den Backend-Ordner:** `cd backend_django`
-2.  **Ausführen mit Docker Compose (empfohlen):**
+1.  **Navigiere in den Backend-Ordner:** `cd backend`
+2.  **Ausführen mit Docker Compose:**
     ```bash
     docker-compose exec web python manage.py test race_core
     ```
-3.  **Ausführen lokal (ohne Docker):**
+    (Ersetze `race_core` ggf. mit dem Namen deiner App oder lasse es weg, um alle Tests auszuführen.)
+3.  **Ausführen lokal (ohne Docker, Poetry-Umgebung muss aktiv sein):**
     ```bash
     poetry run python manage.py test race_core
     ```
 
 ### Frontend Tests
 
-1.  **Navigiere in den Frontend-Ordner:** `cd frontend_react`
+1.  **Navigiere in den Frontend-Ordner:** `cd Frontend` (oder den Stammordner deines React-Projekts)
 2.  **Führe die Tests aus:**
     ```bash
     npm run test
@@ -167,68 +185,63 @@ Falls du das Backend lieber direkt auf deinem System ohne Docker betreiben möch
 ### Backend (mit Docker)
 
 1.  **Umgebungsvariablen für Produktion:**
-    Stelle sicher, dass eine `.env`-Datei mit produktionssicheren Werten (insbesondere `SECRET_KEY`, `DEBUG=False`, korrekte `CORS_ALLOWED_ORIGINS` und Datenbank-Credentials für die Produktionsdatenbank) vorhanden ist. Diese wird von `docker-compose.yml` (oder direkt von Docker beim Start) verwendet.
-2.  **(Optional) `requirements.txt` für reinen Docker Build exportieren:**
-    Obwohl das `Dockerfile` `poetry install` verwenden kann, ist es manchmal üblich, eine `requirements.txt` zu haben.
-    ```bash
-    cd backend_django
-    poetry export -f requirements.txt --output requirements.txt --without-hashes
-    ```
-3.  **Docker Image bauen (falls nicht über Docker Compose):**
+    Stelle sicher, dass eine `.env`-Datei mit produktionssicheren Werten (insbesondere `SECRET_KEY`, `DEBUG=False`, korrekte `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS` und Datenbank-Credentials für die Produktionsdatenbank) vorhanden ist. Diese wird von `docker-compose.yml` (oder direkt von Docker beim Start) verwendet.
+2.  **Docker Image bauen (falls nicht über Docker Compose):**
     Wenn du das Image manuell bauen und z.B. in eine Container Registry pushen möchtest:
     ```bash
-    cd backend_django
+    cd backend
     docker build -t dein-registry/seifenkisten-backend:latest .
     ```
-4.  **Anwendung mit Docker Compose starten (Produktionsbeispiel):**
+3.  **Anwendung mit Docker Compose starten (Produktionsbeispiel):**
     Für die Produktion würdest du typischerweise eine separate `docker-compose.prod.yml` verwenden oder deine bestehende `docker-compose.yml` anpassen (z.B. Volumes für Code-Mounting entfernen, Gunicorn mit mehr Workern starten, Logging konfigurieren).
     ```bash
-    docker-compose up --build -d
+    docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+    # Oder wenn deine docker-compose.yml bereits produktionsbereit ist:
+    # docker-compose up --build -d
     ```
     Stelle sicher, dass `DB_HOST` in der Produktionsumgebung korrekt auf den Datenbankservice zeigt und Persistenz für die Datenbank (Volumes) konfiguriert ist.
 
 ### Frontend
 
 1.  **Frontend bauen:**
-    Navigiere in den `frontend_react`-Ordner:
+    Navigiere in den `Frontend`-Ordner (oder den Stammordner deines React-Projekts):
     ```bash
-    cd frontend_react
+    cd Frontend
     npm run build
     ```
-    Dies erstellt optimierte statische Dateien im `dist` (Vite) oder `build` (CRA) Ordner.
+    Dies erstellt optimierte statische Dateien im `dist`-Ordner (bei Vite) oder `build`-Ordner (bei Create React App).
 2.  **Statische Dateien bereitstellen:**
     Der Inhalt des `dist`/`build`-Ordners kann nun auf einem beliebigen statischen Webhost (z.B. Netlify, Vercel, AWS S3/CloudFront, GitHub Pages) oder einem Webserver wie Nginx oder Apache bereitgestellt werden.
     -   **Wichtig für Client-seitiges Routing:** Konfiguriere deinen Server so, dass alle Anfragen, die nicht auf eine existierende Datei zeigen, an die `index.html` weitergeleitet werden, damit React Router die Navigation übernehmen kann.
 
 ## 🔄 Git Workflow (Beispiel)
 
-Wir verwenden einen einfachen Git-Flow mit `develop`- und `main`-Branches.
+Wir verwenden einen einfachen Git-Flow mit `develop`- und `master`-Branches.
 
-1.  **Arbeite immer auf einem Feature-Branch:**
+1.  **Arbeite immer im `develop`-Branch (oder Feature-Branches davon):**
     ```bash
     git checkout develop          # Wechsle zum Entwicklungsbranch
     git pull origin develop       # Hole die neuesten Änderungen
-    git checkout -b feature/dein-feature-name  # Erstelle einen neuen Branch für dein Feature
+    # Erstelle optional einen Feature-Branch
+    git checkout -b feature/neues-feature
     ```
 2.  **Änderungen vornehmen und committen:**
     ```bash
     git add .
-    git commit -m "Implementiere das XYZ-Feature" # Nutze aussagekräftige Commit-Nachrichten (siehe Conventional Commits)
+    git commit -m "feat: Implementiere das XYZ-Feature" # Nutze aussagekräftige Commit-Nachrichten (siehe Conventional Commits)
     ```
-3.  **Pushe deinen Feature-Branch:**
+3.  **Pushe deinen Branch (Feature-Branch oder `develop`):**
     ```bash
-    git push origin feature/dein-feature-name
+    git push origin feature/neues-feature # oder git push origin develop
     ```
 4.  **Erstelle einen Pull Request (PR):**
-    Gehe zu GitHub (oder deiner Git-Hosting-Plattform) und erstelle einen Pull Request von deinem `feature/dein-feature-name`-Branch in den `develop`-Branch.
+    Gehe zu GitHub (oder deiner Git-Hosting-Plattform) und erstelle einen Pull Request vom `feature/neues-feature`-Branch (oder `develop`) in den `develop`-Branch (für Zwischenreviews) oder vom `develop`-Branch in den `master`-Branch (für Releases).
 5.  **Review und Merge:**
-    Nach einem erfolgreichen Code-Review und bestandenen Tests wird der PR in den `develop`-Branch gemerged.
-6.  **Release (Merge von `develop` nach `main`):**
-    Wenn ein Release ansteht, wird ein PR von `develop` nach `main` erstellt. Der `main`-Branch sollte immer den stabilen, deploybaren Code enthalten.
-7.  **Lokale Branches aktuell halten:**
+    Nach einem erfolgreichen Code-Review und bestandenen Tests wird der PR in den Zielbranch (`develop` oder `master`) gemerged. Der `master`-Branch sollte immer den stabilen, deploybaren Code enthalten.
+6.  **Lokale Branches aktuell halten:**
     ```bash
-    git checkout main
-    git pull origin main
+    git checkout master
+    git pull origin master
     git checkout develop
     git pull origin develop
     ```
@@ -238,12 +251,12 @@ Wir verwenden einen einfachen Git-Flow mit `develop`- und `main`-Branches.
 Beiträge sind herzlich willkommen! Wenn du einen Fehler findest, eine Funktion vorschlagen möchtest oder Code beitragen willst:
 
 1.  Forke das Repository.
-2.  Erstelle einen neuen Feature-Branch (`git checkout -b feature/tolles-neues-feature`).
-3.  Commite deine Änderungen (`git commit -am 'feat: Füge tolles neues Feature hinzu'`).
+2.  Erstelle einen neuen Feature-Branch (`git checkout -b feature/tolles-neues-feature` von `develop` ausgehend).
+3.  Commite deine Änderungen (`git commit -am 'feat: Füge tolles neues Feature hinzu'`). Halte dich dabei an die [Conventional Commits](https://www.conventionalcommits.org/) Spezifikationen.
 4.  Pushe zum Branch (`git push origin feature/tolles-neues-feature`).
-5.  Öffne einen Pull Request.
+5.  Öffne einen Pull Request gegen den `develop`-Branch des Original-Repositorys.
 
-Bitte stelle sicher, dass deine Commits den [Conventional Commits](https://www.conventionalcommits.org/) Spezifikationen folgen und dass alle Tests bestehen.
+Bitte stelle sicher, dass alle Tests bestehen, bevor du einen Pull Request stellst.
 
 ## 📜 Lizenz
 

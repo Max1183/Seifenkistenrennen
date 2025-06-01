@@ -11,7 +11,8 @@ export interface RacerFormData {
 }
 
 export interface RaceRunFormData {
-  racer: number; 
+  racer_id?: number | null;
+  racer_start_number?: string | null;
   time_in_seconds: string | null; 
   disqualified: boolean;
   notes?: string | null;

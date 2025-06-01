@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import ReactDOM from 'react-dom'; // Import ReactDOM for Portals
+import ReactDOM from 'react-dom';
 import type { FormEvent, ChangeEvent } from 'react';
 import apiService from '../services/apiService';
 import type {
   TeamFromAPI,
   RacerFromAPI,
   TeamFormData,
-  RacerFormData, // This type will be updated (date_of_birth removed)
+  RacerFormData,
   RaceRunFormData,
   RaceRunFromAPI,
   SoapboxClassOption
-} from '../types'; // Ensure this path is correct and types.ts is updated
+} from '../types';
 import {
   SOAPBOX_CLASS_VALUES,
   SOAPBOX_CLASS_DISPLAY_MAP,
@@ -32,8 +32,7 @@ interface AdminModalProps {
 
 const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose, title, children, size = 'md' }) => {
   const modalRoot = document.getElementById('modal-root');
-
-  let maxWidthClass = 'modal-content-md'; 
+  let maxWidthClass = 'modal-content-md';
   if (size === 'lg') maxWidthClass = 'modal-content-lg';
   if (size === 'sm') maxWidthClass = 'modal-content-sm';
 
@@ -50,9 +49,7 @@ const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose, title, childre
       </div>
     </div>
   );
-  
   if (!isOpen || !modalRoot) return null;
-
   return ReactDOM.createPortal(modalContent, modalRoot);
 };
 
@@ -66,7 +63,6 @@ const AdminDashboardPage: React.FC = () => {
 
   const [racers, setRacers] = useState<RacerFromAPI[]>([]);
   const [loadingRacers, setLoadingRacers] = useState(false);
-  // Initial state for racerForm without date_of_birth
   const initialRacerFormState: RacerFormData = {
     first_name: '',
     last_name: '',
@@ -79,20 +75,21 @@ const AdminDashboardPage: React.FC = () => {
 
   const [raceRuns, setRaceRuns] = useState<RaceRunFromAPI[]>([]);
   const [loadingRaceRuns, setLoadingRaceRuns] = useState(false);
-  const [raceRunForm, setRaceRunForm] = useState<RaceRunFormData>({
-    racer: 0, 
+  const initialRaceRunFormState: RaceRunFormData = {
+    racer_id: undefined,
+    racer_start_number: '',
     time_in_seconds: '',
     disqualified: false,
     run_identifier: 1,
     run_type: RACE_RUN_TYPE_VALUES.PRACTICE,
     notes: ''
-  });
+  };
+  const [raceRunForm, setRaceRunForm] = useState<RaceRunFormData>(initialRaceRunFormState);
   const [editingRaceRun, setEditingRaceRun] = useState<RaceRunFromAPI | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'team' | 'racer' | 'racerun' | null>(null);
   const [errorAlert, setErrorAlert] = useState<string | null>(null);
-
 
   const soapboxClassOptionsForAdmin: SoapboxClassOption[] = useMemo(() => {
     return Object.entries(SOAPBOX_CLASS_DISPLAY_MAP).map(([value, label]) => ({
@@ -178,7 +175,6 @@ const AdminDashboardPage: React.FC = () => {
       setTeamForm(data ? { name: data.name } : { name: '' });
     } else if (type === 'racer') {
       setEditingRacer(data);
-      // Set racerForm state without date_of_birth
       setRacerForm(data ? {
         first_name: data.first_name, 
         last_name: data.last_name,
@@ -188,11 +184,23 @@ const AdminDashboardPage: React.FC = () => {
       } : initialRacerFormState);
     } else if (type === 'racerun') {
         setEditingRaceRun(data);
-        const defaultRacerId = racers.length > 0 ? racers[0].id : 0;
-        setRaceRunForm(data ? {
-            racer: data.racer, time_in_seconds: data.time_in_seconds || '', disqualified: data.disqualified,
-            notes: data.notes || '', run_identifier: data.run_identifier, run_type: data.run_type
-        } : { racer: defaultRacerId, time_in_seconds: '', disqualified: false, notes: '', run_identifier: 1, run_type: RACE_RUN_TYPE_VALUES.PRACTICE });
+        const defaultRacerId = racers.length > 0 ? racers[0].id : undefined;
+        if (data) {
+            setRaceRunForm({
+                racer_id: data.racer,
+                racer_start_number: racers.find(r => r.id === data.racer)?.start_number || '',
+                time_in_seconds: data.time_in_seconds || '',
+                disqualified: data.disqualified,
+                notes: data.notes || '',
+                run_identifier: data.run_identifier,
+                run_type: data.run_type
+            });
+        } else {
+            setRaceRunForm({
+                ...initialRaceRunFormState,
+                racer_id: defaultRacerId,
+            });
+        }
     }
   };
   const closeModal = () => setIsModalOpen(false);
@@ -203,7 +211,15 @@ const AdminDashboardPage: React.FC = () => {
 
     if (formType === 'team') setTeamForm(prev => ({ ...prev, [name]: val }));
     if (formType === 'racer') setRacerForm(prev => ({ ...prev, [name]: val as any })); 
-    if (formType === 'racerun') setRaceRunForm(prev => ({ ...prev, [name]: val as any }));
+    if (formType === 'racerun') {
+      if (name === 'racer_id') {
+        setRaceRunForm(prev => ({ ...prev, racer_id: Number(val) || undefined, racer_start_number: '' }));
+      } else if (name === 'racer_start_number') {
+        setRaceRunForm(prev => ({ ...prev, racer_start_number: String(val), racer_id: undefined }));
+      } else {
+        setRaceRunForm(prev => ({ ...prev, [name]: val as any }));
+      }
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -215,7 +231,6 @@ const AdminDashboardPage: React.FC = () => {
         editingTeam ? await apiService.updateTeam(editingTeam.id, teamForm) : await apiService.createTeam(teamForm);
       } else if (modalType === 'racer') {
         if (!racerForm.first_name.trim() || !racerForm.last_name.trim()) { setErrorAlert("Vor- und Nachname sind erforderlich."); return; }
-        // Create payload for racer without date_of_birth
         const racerPayload: RacerFormData = {
             first_name: racerForm.first_name,
             last_name: racerForm.last_name,
@@ -225,13 +240,24 @@ const AdminDashboardPage: React.FC = () => {
         };
         editingRacer ? await apiService.updateRacer(editingRacer.id, racerPayload) : await apiService.createRacer(racerPayload);
       } else if (modalType === 'racerun') {
-        if (!raceRunForm.racer || raceRunForm.racer === 0) { setErrorAlert("Fahrer muss ausgewählt sein."); return; }
+        if (!raceRunForm.racer_id && !raceRunForm.racer_start_number?.trim()) {
+          setErrorAlert("Fahrer muss über ID oder Startnummer identifiziert werden.");
+          return;
+        }
+
         const runPayload: RaceRunFormData = {
-            ...raceRunForm,
-            racer: Number(raceRunForm.racer),
-            time_in_seconds: raceRunForm.time_in_seconds?.trim() ? raceRunForm.time_in_seconds.trim().replace(',', '.') : null, 
+            ...(raceRunForm.racer_id && { racer_id: Number(raceRunForm.racer_id) }),
+            ...(raceRunForm.racer_start_number?.trim() && { racer_start_number: raceRunForm.racer_start_number.trim() }),
+            time_in_seconds: raceRunForm.time_in_seconds?.trim() ? raceRunForm.time_in_seconds.trim().replace(',', '.') : null,
+            disqualified: raceRunForm.disqualified,
             notes: raceRunForm.notes?.trim() || null,
+            run_identifier: Number(raceRunForm.run_identifier),
+            run_type: raceRunForm.run_type,
         };
+
+        if (runPayload.racer_id === undefined) delete runPayload.racer_id;
+        if (runPayload.racer_start_number === undefined || runPayload.racer_start_number === '') delete runPayload.racer_start_number;
+        
         editingRaceRun ? await apiService.updateRaceRun(editingRaceRun.id, runPayload) : await apiService.createRaceRun(runPayload);
       }
       closeModal();
@@ -303,16 +329,14 @@ const AdminDashboardPage: React.FC = () => {
       {!loadingRacers && racers.length > 0 && (
         <div className="table-wrapper">
         <table className="results-table">
-          {/* Removed "Geb.-Datum" column header */}
           <thead><tr><th>Name</th><th>Startnr.</th><th>Klasse</th><th>Team</th><th>Aktionen</th></tr></thead>
           <tbody>
-            {racers.sort((a,b) => a.full_name.localeCompare(b.full_name)).map(racer => (
+            {racers.sort((a,b) => (a.full_name || '').localeCompare(b.full_name || '')).map(racer => (
               <tr key={racer.id}>
                 <td>{racer.full_name}</td>
                 <td style={{textAlign: 'center'}}>{racer.start_number || '-'}</td>
                 <td>{racer.soapbox_class_display}</td>
                 <td>{racer.team_name || 'Einzelstarter'}</td>
-                {/* Removed racer.date_of_birth display */}
                 <td>
                   <button className="btn btn-sm btn-outline-primary" style={{marginRight: 'var(--spacing-sm)'}} onClick={() => openModal('racer', racer)}>Bearbeiten</button>
                   <button className="btn btn-sm btn-danger" onClick={() => handleDelete('racer', racer.id)}>Löschen</button>
@@ -398,7 +422,6 @@ const renderRaceRunTabContent = () => (
               </div>
               <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 'var(--spacing-md)'}}>
                 <div className="form-group"><label htmlFor="racerStartNumberModal">Startnummer:</label><input type="text" id="racerStartNumberModal" name="start_number" className="form-control" value={racerForm.start_number || ''} onChange={e => handleFormChange(e, 'racer')} /></div>
-                {/* Geburtsdatum Input-Feld entfernt */}
                 <div className="form-group">
                   <label htmlFor="racerSoapboxClassModal">Klasse:</label>
                   <select id="racerSoapboxClassModal" name="soapbox_class" className="form-control" value={racerForm.soapbox_class} onChange={e => handleFormChange(e, 'racer')}>
@@ -406,7 +429,6 @@ const renderRaceRunTabContent = () => (
                   </select>
                 </div>
               </div>
-              
               <div className="form-group">
                 <label htmlFor="racerTeamModal">Team:</label>
                 <select id="racerTeamModal" name="team" className="form-control" value={racerForm.team || ''} onChange={e => handleFormChange(e, 'racer')}>
@@ -419,13 +441,37 @@ const renderRaceRunTabContent = () => (
           {modalType === 'racerun' && (
             <>
                 <div className="form-group">
-                    <label htmlFor="runRacerModal">Fahrer:</label>
-                    <select id="runRacerModal" name="racer" className="form-control" value={raceRunForm.racer} onChange={e => handleFormChange(e, 'racerun')} required disabled={!!editingRaceRun && !!editingRaceRun.racer}>
-                        <option value={0} disabled={!!editingRaceRun || racers.length === 0}>
-                            {racers.length === 0 ? "Bitte zuerst Fahrer anlegen" : "Fahrer auswählen..."}
+                    <label htmlFor="runRacerIdModal">Fahrer (ID):</label>
+                    <select
+                        id="runRacerIdModal"
+                        name="racer_id"
+                        className="form-control"
+                        value={raceRunForm.racer_id || ''}
+                        onChange={e => handleFormChange(e, 'racerun')}
+                        disabled={!!editingRaceRun && !!editingRaceRun.racer}
+                    >
+                        <option value="" disabled={!!editingRaceRun || racers.length === 0}>
+                            {racers.length === 0 ? "Bitte zuerst Fahrer anlegen" : "Fahrer per ID auswählen..."}
                         </option>
-                        {racers.sort((a,b) => a.full_name.localeCompare(b.full_name)).map(r => <option key={r.id} value={r.id}>{r.full_name} (#{r.start_number || 'N/A'}) - {r.soapbox_class_display}</option>)}
+                        {racers.sort((a,b) => (a.full_name || '').localeCompare(b.full_name || '')).map(r =>
+                            <option key={r.id} value={r.id}>
+                                {r.full_name} (#{r.start_number || 'N/A'}) - {r.soapbox_class_display}
+                            </option>
+                        )}
                     </select>
+                </div>
+                <div className="form-group">
+                    <label htmlFor="runRacerStartNumberModal">Oder Fahrer (Startnummer):</label>
+                    <input
+                        type="text"
+                        id="runRacerStartNumberModal"
+                        name="racer_start_number"
+                        className="form-control"
+                        placeholder="z.B. S101 oder 123"
+                        value={raceRunForm.racer_start_number || ''}
+                        onChange={e => handleFormChange(e, 'racerun')}
+                        disabled={!!editingRaceRun && !!editingRaceRun.racer}
+                    />
                 </div>
                 <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--spacing-md)'}}>
                     <div className="form-group">
