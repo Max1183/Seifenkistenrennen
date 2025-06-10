@@ -21,6 +21,7 @@ class RaceRunSerializer(serializers.ModelSerializer):
             'run_identifier',
             'run_type',
             'run_type_display',
+            'recorded_at',
         ]
 
 
@@ -101,6 +102,7 @@ class RaceRunWriteSerializer(serializers.ModelSerializer):
     racer_start_number = serializers.CharField(
         required=False, allow_null=True, write_only=True, max_length=10, label=_("Racer Start Number")
     )
+    recorded_at = serializers.DateTimeField(required=False)
 
     class Meta:
         model = RaceRun
@@ -112,6 +114,7 @@ class RaceRunWriteSerializer(serializers.ModelSerializer):
             'notes',
             'run_identifier',
             'run_type',
+            'recorded_at',
         ]
 
     def _get_racer_instance_from_input_data(self, input_data_dict):

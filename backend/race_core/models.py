@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 
@@ -118,7 +119,7 @@ class RaceRun(models.Model):
         default=RaceRunType.PRACTICE,
         help_text=_("Type of race run (e.g., Practice, Heat 1, Heat 2).")
     )
-    recorded_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Recorded At"))
+    recorded_at = models.DateTimeField(default=timezone.now, verbose_name=_("Recorded At"))
 
     class Meta:
         verbose_name = _("Race Run")
