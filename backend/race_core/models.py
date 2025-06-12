@@ -22,9 +22,37 @@ class Team(models.Model):
         return self.name
 
 
+class Soapbox(models.Model):
+    name = models.CharField(
+        _("Soapbox Name"),
+        max_length=100,
+        unique=True,
+        help_text=_("The name of the soapbox.")
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Created At"))
+    updated_at = models.DateTimeField(auto_now=True, verbose_name=_("Updated At"))
+
+    class Meta:
+        verbose_name = _("Soapbox")
+        verbose_name_plural = _("Soapboxes")
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
 class Racer(models.Model):
     first_name = models.CharField(_("First Name"), max_length=50)
     last_name = models.CharField(_("Last Name"), max_length=50)
+    soapbox = models.ForeignKey(
+        Soapbox,
+        related_name='racers',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name=_("Soapbox")
+    )
+
 
     class SoapboxClass(models.TextChoices):
         LUFTREIFEN_JUNIOR = 'LJ', _('Luftreifen Junior')
