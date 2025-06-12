@@ -104,7 +104,11 @@ class Racer(models.Model):
 
     @property
     def best_time_seconds(self):
-        valid_runs = self.races.filter(disqualified=False, time_in_seconds__isnull=False)
+        valid_runs = self.races.filter(
+            disqualified=False, time_in_seconds__isnull=False
+        ).exclude(
+            run_type=RaceRun.RaceRunType.PRACTICE
+        )
         if valid_runs.exists():
             return valid_runs.order_by('time_in_seconds').first().time_in_seconds
         return None
