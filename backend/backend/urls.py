@@ -1,10 +1,9 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, reverse_lazy
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import RedirectView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from django.templatetags.static import static as get_static_prefix
 
 
 urlpatterns = [
@@ -13,7 +12,7 @@ urlpatterns = [
     path('api/auth/', include('rest_framework.urls')),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('favicon.ico', RedirectView.as_view(url=get_static_prefix('favicon.ico'), permanent=True)),
+    path('favicon.ico', RedirectView.as_view(url=settings.STATIC_URL + 'favicon.ico')),
 ]
 
 if settings.DEBUG:

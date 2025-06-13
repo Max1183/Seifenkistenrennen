@@ -28,4 +28,4 @@ EXPOSE 8000
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "seifenkisten_api.wsgi:application"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "backend.wsgi:application"]

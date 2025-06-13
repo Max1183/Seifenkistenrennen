@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Team, Racer, RaceRun
+from .models import Team, Racer, RaceRun, Soapbox
 
 
 class RacerInline(admin.TabularInline):
@@ -19,6 +19,12 @@ class TeamAdmin(admin.ModelAdmin):
     racer_count.short_description = "Number of Racers"
 
 
+@admin.register(Soapbox)
+class SoapboxAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+    search_fields = ('name',)
+
+
 class RaceRunInline(admin.TabularInline): # Oder StackedInline
     model = RaceRun
     fields = ('run_type', 'run_identifier', 'time_in_seconds', 'disqualified', 'notes')
@@ -34,7 +40,7 @@ class RacerAdmin(admin.ModelAdmin):
     inlines = [RaceRunInline] # Erlaube das direkte Hinzufügen von Rennläufen zum Racer
     fieldsets = (
         (None, {
-            'fields': ('first_name', 'last_name', 'start_number', 'soapbox_class')
+            'fields': ('first_name', 'last_name', 'soapbox', 'start_number', 'soapbox_class')
         }),
         ('Team Affiliation', {
             'fields': ('team',)

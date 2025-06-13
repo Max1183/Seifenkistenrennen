@@ -42,6 +42,7 @@ const RacerDetailModal: React.FC<RacerDetailModalProps> = ({ racer, isOpen, onCl
         </div>
         <div className="modal-body">
           <p><strong>Team:</strong> {racer?.team_name || 'Einzelstarter'}</p>
+          <p><strong>Seifenkiste:</strong> {racer?.soapbox_name || '-'}</p>
           <p><strong>Klasse:</strong> {racer?.soapbox_class_display}</p>
           <p><strong>Beste Zeit:</strong> <span style={{fontWeight: 'bold'}}>{formatSecondsToTime(parseTimeToSeconds(racer?.best_time_seconds || null))}s</span></p>
           {racer?.rank && <p><strong>Platz (Gesamt):</strong> {racer.rank}</p>}
@@ -86,10 +87,15 @@ const RacerDetailModal: React.FC<RacerDetailModalProps> = ({ racer, isOpen, onCl
   return ReactDOM.createPortal(modalContent, modalRoot);
 };
 
-type SortableRacerKey = keyof Pick<RacerFromAPI, 'full_name' | 'team_name' | 'soapbox_class_display' | 'best_time_seconds' | 'rank'> | `time_${RaceRunTypeValue}`;
+type SortableRacerKey = keyof Pick<RacerFromAPI, 'full_name' | 'team_name' | 'soapbox_name' | 'soapbox_class_display' | 'best_time_seconds' | 'rank'> | `time_${RaceRunTypeValue}`;
 
 interface TeamOption {
     value: number | '' | typeof SOLO_RACER_FILTER_VALUE; // Team ID, leer für "Alle", oder spezieller String
+    label: string;
+}
+
+interface SoapboxOption {
+    value: number;
     label: string;
 }
 
@@ -100,7 +106,9 @@ const ResultsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   const [selectedClass, setSelectedClass] = useState<SoapboxClassValue | ''>('');
-  const [selectedTeam, setSelectedTeam] = useState<number | '' | typeof SOLO_RACER_FILTER_VALUE>(''); // State für Team-Filter angepasst
+  const [selectedTeam, setSelectedTeam] = useState<number | '' | typeof SOLO_RACER_FILTER_VALUE>('');
+  const [selectedSoapbox, setSelectedSoapbox] = useState<number | ''>('');
+
 
   const [sortConfig, setSortConfig] = useState<{ key: SortableRacerKey; direction: 'ascending' | 'descending' }>({
     key: 'best_time_seconds',
@@ -137,11 +145,23 @@ const ResultsPage: React.FC = () => {
     }
     
     return options.sort((a, b) => {
-        // "Einzelstarter" ans Ende der Teamliste (oder an den Anfang, je nach Präferenz)
         if (a.value === SOLO_RACER_FILTER_VALUE) return 1;
         if (b.value === SOLO_RACER_FILTER_VALUE) return -1;
         return a.label.localeCompare(b.label);
     });
+  }, [allRacers]);
+
+  const soapboxOptions: SoapboxOption[] = useMemo(() => {
+    if (!allRacers.length) return [];
+    const soapboxesMap = new Map<number, string>();
+    allRacers.forEach(racer => {
+        if (racer.soapbox && racer.soapbox_name) {
+            soapboxesMap.set(racer.soapbox, racer.soapbox_name);
+        }
+    });
+    return Array.from(soapboxesMap.entries())
+        .map(([id, name]) => ({ value: id, label: name }))
+        .sort((a, b) => a.label.localeCompare(b.label));
   }, [allRacers]);
 
 
@@ -173,6 +193,10 @@ const ResultsPage: React.FC = () => {
         processedRacers = processedRacers.filter(r => r.team === null);
     } else if (selectedTeam !== '') { 
         processedRacers = processedRacers.filter(r => r.team === selectedTeam);
+    }
+
+    if (selectedSoapbox !== '') {
+        processedRacers = processedRacers.filter(r => r.soapbox === selectedSoapbox);
     }
 
     const rankedRacers = processedRacers
@@ -226,7 +250,7 @@ const ResultsPage: React.FC = () => {
       return 0;
     });
     setFilteredAndSortedRacers(processedRacers);
-  }, [allRacers, selectedClass, selectedTeam, sortConfig]);
+  }, [allRacers, selectedClass, selectedTeam, selectedSoapbox, sortConfig]);
 
   const requestSort = useCallback((key: SortableRacerKey) => {
     setSortConfig(prevConfig => ({
@@ -286,12 +310,26 @@ const ResultsPage: React.FC = () => {
             <select
             id="teamFilter"
             className="form-control"
-            value={selectedTeam} // Kann jetzt '', number oder SOLO_RACER_FILTER_VALUE sein
+            value={selectedTeam}
             onChange={handleTeamChange}
             >
             <option value="">Alle Teams</option>
             {teamOptions.map(team => (
                 <option key={team.value.toString()} value={team.value}>{team.label}</option>
+            ))}
+            </select>
+        </div>
+        <div className="filter-group">
+            <label htmlFor="soapboxFilter">Seifenkiste filtern:</label>
+            <select
+            id="soapboxFilter"
+            className="form-control"
+            value={selectedSoapbox}
+            onChange={(e) => setSelectedSoapbox(e.target.value ? Number(e.target.value) : '')}
+            >
+            <option value="">Alle Seifenkisten</option>
+            {soapboxOptions.map(sb => (
+                <option key={sb.value} value={sb.value}>{sb.label}</option>
             ))}
             </select>
         </div>
@@ -310,6 +348,9 @@ const ResultsPage: React.FC = () => {
                 </th>
                 <th onClick={() => requestSort('team_name')} className="sortable-header">
                   Team <span className="sort-indicator">{getSortIndicator('team_name')}</span>
+                </th>
+                <th onClick={() => requestSort('soapbox_name')} className="sortable-header">
+                  Seifenkiste <span className="sort-indicator">{getSortIndicator('soapbox_name')}</span>
                 </th>
                 <th onClick={() => requestSort('soapbox_class_display')} className="sortable-header">
                   Klasse <span className="sort-indicator">{getSortIndicator('soapbox_class_display')}</span>
@@ -331,6 +372,7 @@ const ResultsPage: React.FC = () => {
                   <td style={{textAlign: 'center'}}>{racer.rank || '-'}</td>
                   <td>{racer.full_name}</td>
                   <td>{racer.team_name || 'Einzelstarter'}</td>
+                  <td>{racer.soapbox_name || '-'}</td>
                   <td>{racer.soapbox_class_display}</td>
                   {DISPLAYED_RUN_TYPES_ORDER.map(runKey => (
                     <td key={`${racer.id}-${runKey}`}>{getRaceTimeForTable(racer, runKey, 1)}</td>

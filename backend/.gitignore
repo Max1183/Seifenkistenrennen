@@ -60,8 +60,9 @@ media/
 staticfiles_collected/
 
 # Virtualenv
-.env
+.env.dev
 .env.local
+.env.prod
 venv/
 env/
 .venv/

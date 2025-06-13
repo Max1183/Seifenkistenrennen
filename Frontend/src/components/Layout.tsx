@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { NavLink, Link, Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
 
 const CVJM_WEBSITE_URL = "https://cvjmweissach.de/";
 const LOGO_URL = "/LogoBig.png"; 
