@@ -71,14 +71,14 @@ Diese Methode startet das Django-Backend und eine PostgreSQL-Datenbank in Docker
     Kopiere die Beispiel-Umgebungsdatei und passe sie bei Bedarf an. Die Standardwerte sind für die Docker-Compose-Einrichtung optimiert.
 
     ```bash
-    cp .env.example .env
+    cp .env.example .env.dev
     ```
 
-    _Wichtig:_ `DB_HOST` in `.env` sollte auf `db` gesetzt sein, um auf den PostgreSQL-Container innerhalb des Docker-Netzwerks zu verweisen.
+    _Wichtig:_ `DB_HOST` in `.env.dev` sollte auf `db` gesetzt sein, um auf den PostgreSQL-Container innerhalb des Docker-Netzwerks zu verweisen.
 3. **Anwendung bauen und starten:**
 
     ```bash
-    docker-compose up --build -d
+    docker-compose --env-file .env.dev up --build -d
     ```
 
     - `-d` startet die Container im Hintergrund.
@@ -112,13 +112,13 @@ Falls du das Backend lieber direkt auf deinem System ohne Docker betreiben möch
     Kopiere die Beispiel-Umgebungsdatei und passe sie für die lokale Entwicklung an:
 
     ```bash
-    cp .env.example .env
+    cp .env.example .env.local
     ```
 
-    Bearbeite die `.env`-Datei. Stelle sicher, dass `DB_HOST` auf `localhost` oder deine lokale PostgreSQL-IP zeigt und die Datenbank-Credentials korrekt sind.
-    _Hinweis: Deine `settings.py` muss so konfiguriert sein, dass sie Variablen aus dieser `.env`-Datei lädt (z.B. mittels `python-decouple` oder `django-environ`)._
+    Bearbeite die `.env.local`-Datei. Stelle sicher, dass `DB_HOST` auf `localhost` oder deine lokale PostgreSQL-IP zeigt und die Datenbank-Credentials korrekt sind.
+    _Hinweis: Deine `settings.py` muss so konfiguriert sein, dass sie Variablen aus dieser `.env.local`-Datei lädt (z.B. mittels `python-decouple` oder `django-environ`)._
 5. **PostgreSQL Datenbank einrichten:**
-    Stelle sicher, dass du eine lokale PostgreSQL-Instanz laufen hast und eine Datenbank sowie einen Benutzer gemäß den Angaben in deiner `.env`-Datei erstellt hast.
+    Stelle sicher, dass du eine lokale PostgreSQL-Instanz laufen hast und eine Datenbank sowie einen Benutzer gemäß den Angaben in deiner `.env.local`-Datei erstellt hast.
 6. **Datenbankmigrationen ausführen:**
 
     ```bash
@@ -152,8 +152,6 @@ Falls du das Backend lieber direkt auf deinem System ohne Docker betreiben möch
 
     ```bash
     cd Frontend
-    # Falls dein React-Projekt in einem Unterordner wie 'frontend_react' innerhalb von 'Frontend' liegt,
-    # dann navigiere dorthin: cd Frontend/frontend_react
     ```
 
 2. **Abhängigkeiten installieren:**
@@ -219,22 +217,12 @@ Falls du das Backend lieber direkt auf deinem System ohne Docker betreiben möch
 ### Backend (mit Docker)
 
 1. **Umgebungsvariablen für Produktion:**
-    Stelle sicher, dass eine `.env`-Datei mit produktionssicheren Werten (insbesondere `SECRET_KEY`, `DEBUG=False`, korrekte `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS` und Datenbank-Credentials für die Produktionsdatenbank) vorhanden ist. Diese wird von `docker-compose.yml` (oder direkt von Docker beim Start) verwendet.
-2. **Docker Image bauen (falls nicht über Docker Compose):**
-    Wenn du das Image manuell bauen und z.B. in eine Container Registry pushen möchtest:
+    Stelle sicher, dass eine `.env.prod`-Datei mit produktionssicheren Werten (insbesondere `SECRET_KEY`, `DEBUG=False`, korrekte `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS` und Datenbank-Credentials für die Produktionsdatenbank) vorhanden ist. Diese wird von `docker-compose.yml` (oder direkt von Docker beim Start) verwendet.
+2. **Docker Image bauen:**
 
     ```bash
     cd backend
-    docker build -t dein-registry/seifenkisten-backend:latest .
-    ```
-
-3. **Anwendung mit Docker Compose starten (Produktionsbeispiel):**
-    Für die Produktion würdest du typischerweise eine separate `docker-compose.prod.yml` verwenden oder deine bestehende `docker-compose.yml` anpassen (z.B. Volumes für Code-Mounting entfernen, Gunicorn mit mehr Workern starten, Logging konfigurieren).
-
-    ```bash
-    docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
-    # Oder wenn deine docker-compose.yml bereits produktionsbereit ist:
-    # docker-compose up --build -d
+    docker-compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml up -d --build
     ```
 
     Stelle sicher, dass `DB_HOST` in der Produktionsumgebung korrekt auf den Datenbankservice zeigt und Persistenz für die Datenbank (Volumes) konfiguriert ist.

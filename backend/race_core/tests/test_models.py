@@ -24,10 +24,14 @@ class RacerModelTests(TestCase):
             team=cls.team,
             start_number="95"
         )
+        # Add runs to test the best_time logic
         RaceRun.objects.create(racer=cls.racer, run_type='H1', run_identifier=1, time_in_seconds="40.100")
         RaceRun.objects.create(racer=cls.racer, run_type='H2', run_identifier=1, time_in_seconds="39.900")
-        RaceRun.objects.create(racer=cls.racer, run_type='PR', run_identifier=1, time_in_seconds="41.000",
-                               disqualified=True)
+        # This practice run is the fastest but should be ignored
+        RaceRun.objects.create(racer=cls.racer, run_type='PR', run_identifier=1, time_in_seconds="35.000")
+        # This disqualified run should be ignored
+        RaceRun.objects.create(racer=cls.racer, run_type='H1', run_identifier=2, time_in_seconds="38.000", disqualified=True)
+
 
     def test_racer_creation_and_str(self):
         self.assertEqual(self.racer.first_name, "Lightning")
@@ -42,6 +46,7 @@ class RacerModelTests(TestCase):
         self.assertEqual(self.racer.full_name, "Lightning McQueen")
 
     def test_racer_best_time_seconds_property(self):
+        # The best time should be from H2 (39.900), not the faster PR run (35.000).
         self.assertEqual(self.racer.best_time_seconds, Decimal("39.900"))
 
     def test_racer_best_time_seconds_no_valid_runs(self):
