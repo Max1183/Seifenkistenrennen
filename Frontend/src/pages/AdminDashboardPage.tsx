@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import axios from 'axios';
 import ReactDOM from 'react-dom';
 import type { FormEvent, ChangeEvent } from 'react';
 import apiService from '../services/apiService';
@@ -122,9 +123,10 @@ const AdminDashboardPage: React.FC = () => {
         const fetchedTeams = await apiService.getTeams();
         setTeams(fetchedTeams); 
       }
-      catch (e: any) {
+      catch (e: unknown) {
         console.error("Error fetching teams", e);
-        setErrorAlert(`Fehler beim Laden der Teams: ${e.message || 'Unbekannter Fehler'}`);
+        const errorMessage = e instanceof Error ? e.message : 'Unbekannter Fehler';
+        setErrorAlert(`Fehler beim Laden der Teams: ${errorMessage}`);
       }
       finally { setLoadingTeams(false); }
     } else if (activeTab === 'soapboxes') {
@@ -132,9 +134,10 @@ const AdminDashboardPage: React.FC = () => {
       try {
         const fetchedSoapboxes = await apiService.getSoapboxes();
         setSoapboxes(fetchedSoapboxes);
-      } catch (e: any) {
+      } catch (e: unknown) {
         console.error("Error fetching soapboxes", e);
-        setErrorAlert(`Fehler beim Laden der Seifenkisten: ${e.message || 'Unbekannter Fehler'}`);
+        const errorMessage = e instanceof Error ? e.message : 'Unbekannter Fehler';
+        setErrorAlert(`Fehler beim Laden der Seifenkisten: ${errorMessage}`);
       } finally {
         setLoadingSoapboxes(false);
       }
@@ -156,9 +159,10 @@ const AdminDashboardPage: React.FC = () => {
             return {...r, team_name: team ? team.name : (r.team_name || null), soapbox_name: soapbox ? soapbox.name : (r.soapbox_name || null) };
         });
         setRacers(racersWithDetails);
-      } catch (e: any) {
+      } catch (e: unknown) {
         console.error("Error fetching participants data", e);
-        setErrorAlert(`Fehler beim Laden der Teilnehmerdaten: ${e.message || 'Unbekannter Fehler'}`);
+        const errorMessage = e instanceof Error ? e.message : 'Unbekannter Fehler';
+        setErrorAlert(`Fehler beim Laden der Teilnehmerdaten: ${errorMessage}`);
       }
       finally { setLoadingRacers(false); }
     } else if (activeTab === 'raceruns') {
@@ -188,17 +192,23 @@ const AdminDashboardPage: React.FC = () => {
     fetchData();
   }, [fetchData]); 
 
-  const openModal = (type: 'team' | 'soapbox' | 'racer' | 'racerun', data: any | null = null) => {
+  const openModal = (
+    type: 'team' | 'soapbox' | 'racer' | 'racerun',
+    data: TeamFromAPI | SoapboxFromAPI | RacerFromAPI | RaceRunFromAPI | null = null
+  ) => {
     setModalType(type);
     setIsModalOpen(true);
     setErrorAlert(null);
     if (type === 'team') {
+      data = data as TeamFromAPI | null;
       setEditingTeam(data);
       setTeamForm(data ? { name: data.name } : { name: '' });
     } else if (type === 'soapbox') {
+      data = data as SoapboxFromAPI | null;
       setEditingSoapbox(data);
       setSoapboxForm(data ? { name: data.name } : initialSoapboxFormState);
     } else if (type === 'racer') {
+      data = data as RacerFromAPI | null;
       setEditingRacer(data);
       setRacerForm(data ? {
         first_name: data.first_name, 
@@ -209,17 +219,18 @@ const AdminDashboardPage: React.FC = () => {
         start_number: data.start_number || ''
       } : initialRacerFormState);
     } else if (type === 'racerun') {
-        setEditingRaceRun(data);
+        const raceRunData = data as RaceRunFromAPI | null;
+        setEditingRaceRun(raceRunData);
         const defaultRacerId = racers.length > 0 ? racers[0].id : undefined;
-        if (data) {
+        if (raceRunData) {
             setRaceRunForm({
-                racer_id: data.racer,
-                racer_start_number: racers.find(r => r.id === data.racer)?.start_number || '',
-                time_in_seconds: data.time_in_seconds || '',
-                disqualified: data.disqualified,
-                notes: data.notes || '',
-                run_identifier: data.run_identifier,
-                run_type: data.run_type
+                racer_id: raceRunData.racer,
+                racer_start_number: racers.find(r => r.id === raceRunData.racer)?.start_number || '',
+                time_in_seconds: raceRunData.time_in_seconds || '',
+                disqualified: raceRunData.disqualified,
+                notes: raceRunData.notes || '',
+                run_identifier: raceRunData.run_identifier,
+                run_type: raceRunData.run_type
             });
         } else {
             setRaceRunForm({
@@ -309,20 +320,21 @@ const AdminDashboardPage: React.FC = () => {
       }
       closeModal();
       fetchData(); 
-    } catch (error: any) {
-      const data = error.response?.data;
-      let message = "Ein unbekannter Fehler ist aufgetreten.";
-      if (typeof data === 'string') message = data;
-      else if (data && typeof data === 'object') {
-        const fieldErrors = Object.entries(data)
-            .map(([key, value]) => `${key}: ${(Array.isArray(value) ? value.join(', ') : String(value))}`)
-            .join('; ');
-        if (fieldErrors) message = fieldErrors;
-        else if (data.detail) message = data.detail;
-      } else if (error.message) message = error.message;
-      
-      console.error(`Error saving ${modalType}:`, error);
-      setErrorAlert(`Fehler beim Speichern: ${message}`);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        const data = error.response?.data;
+        let message = "Ein unbekannter Fehler ist aufgetreten.";
+        if (typeof data === 'string') message = data;
+        else if (data && typeof data === 'object') {
+          const fieldErrors = Object.entries(data)
+              .map(([key, value]) => `${key}: ${(Array.isArray(value) ? value.join(', ') : String(value))}`)
+              .join('; ');
+          if (fieldErrors) message = fieldErrors;
+          else if (data.detail) message = data.detail;
+        } else if (error.message) message = error.message;
+        console.error(`Error saving ${modalType}:`, error);
+        setErrorAlert(`Fehler beim Speichern: ${message}`);
+      }
     }
   };
 
@@ -336,8 +348,10 @@ const AdminDashboardPage: React.FC = () => {
       if (type === 'racer') await apiService.deleteRacer(id);
       if (type === 'racerun') await apiService.deleteRaceRun(id);
       fetchData(); 
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || JSON.stringify(error.response?.data) || error.message;
+    } catch (error: unknown) {
+      const errorMessage = axios.isAxiosError(error)
+        ? error.response?.data?.detail || JSON.stringify(error.response?.data) || error.message
+        : 'Unbekannter Fehler';
       console.error(`Error deleting ${type}:`, error);
       setErrorAlert(`Fehler beim Löschen: ${errorMessage}`);
     }

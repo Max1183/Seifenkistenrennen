@@ -8,8 +8,6 @@ import ResultsPage from './pages/ResultsPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import NotFoundPage from './pages/NotFoundPage';
-// AdminManageRacesPage is not currently linked in navigation, kept for potential future use.
-// import AdminManageRacesPage from './pages/AdminManageRacesPage';
 
 const PlaceholderPage: React.FC<{ title: string; content?: string }> = ({ title, content }) => (
   <div className="page-container"><h1>{title}</h1><p>{content || `Inhalt für ${title} folgt...`}</p></div>
@@ -30,9 +28,6 @@ function App() {
             <Route path="/admin/login" element={<AdminLoginPage />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/admin" element={<AdminDashboardPage />} />
-              {/* Example for a future dedicated race management page:
-              <Route path="/admin/races" element={<AdminManageRacesPage />} />
-              */}
             </Route>
 
             <Route path="*" element={<NotFoundPage />} />
