@@ -155,7 +155,6 @@ try:
     )
     from common.data_models import MainDataEntry, DisplayableMainData
 except ImportError as e:
-    print(e)
     print("FEHLER: common-Dateien nicht gefunden.")
     STATUS_NEW, STATUS_MODIFIED, STATUS_DELETED, STATUS_SYNCED, STATUS_SYNCED_LOCAL, STATUS_COMPLETE = "new", "modified", "deleted", "synced", 'saved internally', "complete"
     COLOR_STATUS_NEW_BG, COLOR_STATUS_MODIFIED_BG, COLOR_STATUS_DELETED_FG, COLOR_STATUS_COMPLETE_BG, COLOR_STATUS_SYNCED_LOCAL_BG = "lightgreen", "lightyellow", "red", "lightblue", "lightgrey"
@@ -164,6 +163,57 @@ except ImportError as e:
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("blue")
 
+class CustomTwoButtonDialog(ctk.CTkToplevel):
+    """
+    Ein modaler Dialog mit einer Nachricht und zwei benutzerdefinierten Buttons.
+    Gibt den Text des geklickten Buttons zurück.
+    """
+    def __init__(self, parent, title: str, message: str, button_1_text: str, button_2_text: str):
+        super().__init__(parent)
+
+        self.title(title)
+        self.geometry("400x200")
+        self.transient(parent)  # Immer im Vordergrund des Hauptfensters
+        self.grab_set()         # Macht den Dialog modal (blockiert Interaktion mit dem Hauptfenster)
+        self.protocol("WM_DELETE_WINDOW", self._on_closing) # Handle Klick auf 'X'
+
+        self._choice = None # Variable zur Speicherung der Benutzerauswahl
+
+        # Layout-Konfiguration
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+
+        main_frame = ctk.CTkFrame(self)
+        main_frame.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
+        main_frame.grid_columnconfigure((0, 1), weight=1)
+        main_frame.grid_rowconfigure(0, weight=1)
+        # Nachricht an den Benutzer
+        label = ctk.CTkLabel(main_frame, text=message, wraplength=340, justify="left", font=ctk.CTkFont(size=14), text_color="red", fg_color="white")
+        label.grid(row=0, column=0, columnspan=4, padx=20, pady=(20, 10), sticky="ew")
+
+        # Erster Button
+        button1 = ctk.CTkButton(main_frame, text=button_1_text, command=lambda: self._set_choice_and_close(button_1_text))
+        button1.grid(row=1, column=0, padx=(20, 10), pady=(10, 20), sticky="ew")
+
+        # Zweiter Button
+        button2 = ctk.CTkButton(main_frame, text=button_2_text, command=lambda: self._set_choice_and_close(button_2_text))
+        button2.grid(row=1, column=1, padx=(10, 20), pady=(10, 20), sticky="ew")
+
+        self.after(100, self.lift) # Stellt sicher, dass der Dialog im Vordergrund ist
+
+    def _set_choice_and_close(self, choice: str):
+        """Speichert die Auswahl und schließt das Fenster."""
+        self._choice = choice
+        self.destroy()
+
+    def _on_closing(self):
+        """Wird aufgerufen, wenn das Fenster über 'X' geschlossen wird."""
+        self._choice = None
+        self.destroy()
+
+    def get_choice(self) -> Optional[str]:
+        """Gibt die Auswahl des Benutzers zurück, nachdem das Fenster geschlossen wurde."""
+        return self._choice
 
 class MergeView(ctk.CTkToplevel):
     def __init__(self, parent, local_data: Dict[str, Dict], remote_data: Dict[str, Dict], source_name: str,
@@ -322,7 +372,6 @@ class MergeView(ctk.CTkToplevel):
         for item_id, details in self.merge_items.items():
             status_text, color = status_map.get(details['status'], ("[Unbekannt]", "white"))
             item_data = details['local'] or details['remote']
-            print(item_data)
             sn = item_data['data'].get('start_nummer', 'N/A')
             rn = item_data['data'].get('round_number', 'N/A')
 
@@ -1374,7 +1423,45 @@ class MainApp(ctk.CTk):
 
             return True
 
+    def _check_for_double_data(self):
+        for item_id, details in self.data_items.items():
+            payload = copy.deepcopy(details.get("data", {}))
+            for item_id1, details1 in self.data_items.items():
+                payload1 = copy.deepcopy(details1.get("data", {}))
+                if (item_id1 != item_id and
+                        payload.get("start_nummer") == payload1.get("start_nummer") and
+                        payload.get("round_number") == payload1.get("round_number")):
+
+
+                    dialog_message = (f"!!!DOPPELTER EINTRAG GEFUNDEN!!!\n"
+                                      f"Startnummer: {payload.get('start_nummer')}\n"
+                                      f"Runde: {payload.get('round_number')}\n"
+                                      f"BEHEBE DIES UMGEHEND!")
+
+                    dialog = CustomTwoButtonDialog(parent=self,
+                                                   title="ACHTUNG: Doppelter Eintrag",
+                                                   message=dialog_message,
+                                                   button_1_text="Abrechen",
+                                                   button_2_text="Trotzdem Pushen")
+
+                    # Warten, bis der Benutzer eine Auswahl trifft und das Dialogfenster schließt
+                    self.wait_window(dialog)
+
+                    choice = dialog.get_choice()
+
+                    if choice == "Trotzdem Pushen":
+                        return True
+
+                    elif choice == "Abrechen":
+                        return False
+
+                    else:  # Der Benutzer hat das Fenster geschlossen, ohne einen Button zu klicken
+                        return False
+            return True
+
     def _collect_data_for_website_push(self) -> tuple[List[Dict[str, Any]], List[str], List[str]]:
+        if self._check_for_double_data() == False:
+            return False, "", ""
         data_for_website = []
         items_to_mark_synced_after_push = []
         items_to_delete_permanently_after_push = []
@@ -1408,6 +1495,8 @@ class MainApp(ctk.CTk):
     def initiate_push_to_website(self):
         self.create_internal_snapshot(snapshot_type="pre_push_backup", show_success_message=False)
         data_to_send, _, _ = self._collect_data_for_website_push()
+        if data_to_send == False:
+            return
         if not data_to_send:
             messagebox.showinfo("Push to Website",
                                 "Keine neuen oder geänderten Daten für den Push zur Website vorhanden.", parent=self)
@@ -1763,7 +1852,7 @@ class MainApp(ctk.CTk):
             sn = data.get("start_nummer")
             rn = data.get("round_number")
             if sn and rn:
-                composite_key = f"{sn}-{rn}"
+                composite_key = item_id
                 local_data_for_merge[composite_key] = details
                 self.merge_local_map[composite_key] = item_id
 
