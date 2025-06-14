@@ -9,7 +9,7 @@ import socket
 import queue
 import time
 
-HOST = '127.0.0.1'  # Default host, could be made configurable
+HOST = '127.0.0.1'  # Default host, could be made configurable 192.168.2.105
 PORT = 65432
 message_to_server_queue = queue.Queue()
 received_message_queue = queue.Queue()  # For messages from server to this app's main thread
