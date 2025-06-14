@@ -7,7 +7,9 @@ import type {
   TeamFromAPI,
   TeamFormData,
   RaceRunFromAPI,
-  RaceRunFormData
+  RaceRunFormData,
+  SoapboxFromAPI,
+  SoapboxFormData,
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
@@ -45,7 +47,7 @@ apiClient.interceptors.request.use(
 );
 
 let isRefreshing = false;
-let failedQueue: Array<{ resolve: (value?: any) => void; reject: (reason?: any) => void }> = [];
+let failedQueue: Array<{ resolve: (value?: string | null) => void; reject: (reason?: AxiosError | null) => void }> = [];
 
 const processQueue = (error: AxiosError | null, token: string | null = null) => {
   failedQueue.forEach(prom => error ? prom.reject(error) : prom.resolve(token));
@@ -110,16 +112,31 @@ const createTeam = async (teamData: TeamFormData) => apiClient.post<TeamFromAPI>
 const updateTeam = async (id: number | string, teamData: TeamFormData) => apiClient.put<TeamFromAPI>(`/teams/${id}/`, teamData).then(res => res.data);
 const deleteTeam = async (id: number | string) => apiClient.delete(`/teams/${id}/`).then(res => res.data);
 
+// Soapboxes
+const getSoapboxes = async () => apiClient.get<SoapboxFromAPI[]>('/soapboxes/').then(res => res.data);
+const createSoapbox = async (data: SoapboxFormData) => apiClient.post<SoapboxFromAPI>('/soapboxes/', data).then(res => res.data);
+const updateSoapbox = async (id: number | string, data: SoapboxFormData) => apiClient.put<SoapboxFromAPI>(`/soapboxes/${id}/`, data).then(res => res.data);
+const deleteSoapbox = async (id: number | string) => apiClient.delete(`/soapboxes/${id}/`).then(res => res.data);
+
 // Racers
 const getRacers = async (params?: Record<string, string | number>) => apiClient.get<RacerFromAPI[]>('/racers/', { params }).then(res => res.data);
 const getRacerDetails = async (id: number | string) => apiClient.get<RacerFromAPI>(`/racers/${id}/`).then(res => res.data);
 const createRacer = async (racerData: RacerFormData) => {
-    const payload = { ...racerData, team: racerData.team === '' ? null : racerData.team };
+    const payload = { 
+        ...racerData, 
+        team: racerData.team === '' ? null : racerData.team,
+        soapbox: racerData.soapbox === '' ? null : racerData.soapbox,
+    };
     return apiClient.post<RacerFromAPI>('/racers/', payload).then(res => res.data);
 };
 const updateRacer = async (id: number | string, racerData: Partial<RacerFormData>) => {
-    const payload = { ...racerData, team: racerData.team === '' ? null : racerData.team };
-    // Ensure date_of_birth is included if present, otherwise backend might reject partial update on this field
+    const payload: Partial<RacerFormData> = { ...racerData };
+    if ('team' in racerData) {
+        payload.team = racerData.team === '' ? null : racerData.team;
+    }
+    if ('soapbox' in racerData) {
+        payload.soapbox = racerData.soapbox === '' ? null : racerData.soapbox;
+    }
     return apiClient.put<RacerFromAPI>(`/racers/${id}/`, payload).then(res => res.data);
 };
 const deleteRacer = async (id: number | string) => apiClient.delete(`/racers/${id}/`).then(res => res.data);
@@ -134,6 +151,7 @@ const deleteRaceRun = async (id: number) => apiClient.delete(`/raceruns/${id}/`)
 export default {
   login, logout, getAccessToken,
   getTeams, getTeamById, createTeam, updateTeam, deleteTeam,
+  getSoapboxes, createSoapbox, updateSoapbox, deleteSoapbox,
   getRacers, getRacerDetails, createRacer, updateRacer, deleteRacer,
   getRaceRuns, createRaceRun, updateRaceRun, deleteRaceRun,
 };

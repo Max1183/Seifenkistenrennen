@@ -1,12 +1,10 @@
-from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
+from rest_framework import viewsets, permissions
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import Team, Racer, RaceRun
+from .models import Team, Racer, RaceRun, Soapbox
 from .serializers import (
-    TeamSerializer, RacerSerializer, RaceRunSerializer,
-    TeamWriteSerializer, RacerWriteSerializer, RaceRunWriteSerializer
+    TeamSerializer, RacerSerializer, RaceRunSerializer, TeamWriteSerializer, RacerWriteSerializer,
+    RaceRunWriteSerializer, SoapboxSerializer, SoapboxWriteSerializer
 )
 
 
@@ -22,8 +20,20 @@ class TeamViewSet(viewsets.ModelViewSet):
         return TeamSerializer
 
 
+class SoapboxViewSet(viewsets.ModelViewSet):
+    queryset = Soapbox.objects.all()
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['name']
+
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return SoapboxWriteSerializer
+        return SoapboxSerializer
+
+
 class RacerViewSet(viewsets.ModelViewSet):
-    queryset = Racer.objects.select_related('team').prefetch_related('races').all()
+    queryset = Racer.objects.select_related('team', 'soapbox').prefetch_related('races').all()
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend]
     filterset_fields = {

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Team, Racer, RaceRun
+from .models import Team, Racer, RaceRun, Soapbox
 from django.utils.translation import gettext_lazy as _
 
 
@@ -27,6 +27,7 @@ class RaceRunSerializer(serializers.ModelSerializer):
 
 class RacerSerializer(serializers.ModelSerializer):
     team_name = serializers.CharField(source='team.name', read_only=True, allow_null=True)
+    soapbox_name = serializers.CharField(source='soapbox.name', read_only=True, allow_null=True)
     best_time_seconds = serializers.DecimalField(max_digits=6, decimal_places=3, read_only=True, allow_null=True)
     soapbox_class_display = serializers.CharField(source='get_soapbox_class_display', read_only=True)
     races = RaceRunSerializer(many=True, read_only=True)
@@ -38,6 +39,8 @@ class RacerSerializer(serializers.ModelSerializer):
             'first_name',
             'last_name',
             'full_name',
+            'soapbox',
+            'soapbox_name',
             'soapbox_class',
             'soapbox_class_display',
             'team',
@@ -48,7 +51,20 @@ class RacerSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
-        read_only_fields = ['id', 'full_name', 'best_time_seconds', 'team_name', 'soapbox_class_display', 'races']
+        read_only_fields = ['id', 'full_name', 'best_time_seconds', 'team_name', 'soapbox_class_display', 'races', 'soapbox_name']
+
+
+class SoapboxSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Soapbox
+        fields = [
+            'id',
+            'name',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id']
 
 
 class TeamSerializer(serializers.ModelSerializer):
@@ -81,6 +97,16 @@ class TeamWriteSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 
+class SoapboxWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Soapbox
+        fields = [
+            'id',
+            'name',
+        ]
+        read_only_fields = ['id']
+
+
 class RacerWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Racer
@@ -91,6 +117,7 @@ class RacerWriteSerializer(serializers.ModelSerializer):
             'soapbox_class',
             'team',
             'start_number',
+            'soapbox',
         ]
         read_only_fields = ['id']
 

@@ -38,7 +38,8 @@ class RacerReadSerializerTests(TestCase):
             soapbox_class=Racer.SoapboxClass.X_KLASSE, start_number="S100"
         )
         RaceRun.objects.create(racer=cls.racer, run_type='H1', run_identifier=1, time_in_seconds="50.123")
-        RaceRun.objects.create(racer=cls.racer, run_type='PR', run_identifier=1, time_in_seconds="52.000", disqualified=True)
+        # This practice run is faster but should be ignored by the best_time_seconds property
+        RaceRun.objects.create(racer=cls.racer, run_type='PR', run_identifier=1, time_in_seconds="49.000")
 
     def test_racer_serializer_output(self):
         serializer = RacerSerializer(instance=self.racer)
@@ -52,6 +53,7 @@ class RacerReadSerializerTests(TestCase):
         self.assertEqual(data['team'], self.team.id)
         self.assertEqual(data['team_name'], self.team.name)
         self.assertEqual(data['start_number'], "S100")
+        # The serializer should reflect the property's logic, ignoring the practice run.
         self.assertEqual(data['best_time_seconds'], "50.123")
         self.assertEqual(len(data['races']), 2)
         self.assertTrue(any(run['run_type'] == 'H1' for run in data['races']))

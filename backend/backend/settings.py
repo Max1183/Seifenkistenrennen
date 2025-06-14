@@ -4,7 +4,13 @@ from pathlib import Path
 from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-load_dotenv(dotenv_path=BASE_DIR / ".env.local")
+if os.environ.get("DOCKER_CONTAINER") != "True":
+    print("Nicht im Docker-Container. Lade .env.local...")
+    dotenv_path = BASE_DIR / '.env.local'
+    if dotenv_path.exists():
+        load_dotenv(dotenv_path=dotenv_path)
+    else:
+        print(f"WARNUNG: Lokale Entwicklungs-Env-Datei nicht gefunden unter {dotenv_path}")
 
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
@@ -134,3 +140,11 @@ if DEBUG:
     INTERNAL_IPS = [
         "127.0.0.1",
     ]
+
+if not DEBUG and os.environ.get("SECURE_SSL_REDIRECT") == "True":
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True

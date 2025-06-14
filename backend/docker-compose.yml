@@ -6,10 +6,11 @@ services:
     command: gunicorn --bind 0.0.0.0:8000 backend.wsgi:application
     volumes:
       - .:/app
+      - static_volume:/app/staticfiles_collected
     ports:
       - "8000:8000"
     env_file:
-      - .env
+      - .env.dev
     depends_on:
       - db
     restart: unless-stopped
@@ -33,3 +34,4 @@ services:
 
 volumes:
   postgres_data:
+  static_volume:

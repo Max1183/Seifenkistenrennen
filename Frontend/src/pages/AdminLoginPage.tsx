@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { FormEvent } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
 
 const AdminLoginPage: React.FC = () => {
   const [username, setUsername] = useState('');

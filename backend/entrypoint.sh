@@ -22,8 +22,14 @@ done
 echo "Führe Datenbankmigrationen aus..."
 python manage.py migrate --noinput
 
-echo "Sammle statische Dateien..."
-python manage.py collectstatic --noinput --clear
+STATIC_ROOT_DIR="/app/staticfiles_collected"
+
+if [ ! -f "${STATIC_ROOT_DIR}/staticfiles.json" ]; then
+    echo "Statisches Verzeichnis ist leer oder Manifest fehlt. Führe collectstatic aus..."
+    python manage.py collectstatic --noinput --clear
+else
+    echo "Statisches Verzeichnis existiert bereits. Überspringe collectstatic."
+fi
 
 echo "Versuche, initialen Superuser zu erstellen..."
 python manage.py create_initial_superuser
