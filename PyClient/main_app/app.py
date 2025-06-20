@@ -28,7 +28,7 @@ def handle_client(conn: socket.socket, addr: Any, app_instance: 'MainApp'):
 
     client_send_queue: queue.Queue[Optional[str]] = queue.Queue()
     app_instance.add_client_queue(addr, client_send_queue)
-
+    conn.settimeout(1)
     send_thread = threading.Thread(target=send_to_client_from_queue, args=(conn, client_send_queue, addr), daemon=True)
     send_thread.start()
 
@@ -155,7 +155,6 @@ try:
     )
     from common.data_models import MainDataEntry, DisplayableMainData
 except ImportError as e:
-    print(e)
     print("FEHLER: common-Dateien nicht gefunden.")
     STATUS_NEW, STATUS_MODIFIED, STATUS_DELETED, STATUS_SYNCED, STATUS_SYNCED_LOCAL, STATUS_COMPLETE = "new", "modified", "deleted", "synced", 'saved internally', "complete"
     COLOR_STATUS_NEW_BG, COLOR_STATUS_MODIFIED_BG, COLOR_STATUS_DELETED_FG, COLOR_STATUS_COMPLETE_BG, COLOR_STATUS_SYNCED_LOCAL_BG = "lightgreen", "lightyellow", "red", "lightblue", "lightgrey"
@@ -164,6 +163,57 @@ except ImportError as e:
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("blue")
 
+class CustomTwoButtonDialog(ctk.CTkToplevel):
+    """
+    Ein modaler Dialog mit einer Nachricht und zwei benutzerdefinierten Buttons.
+    Gibt den Text des geklickten Buttons zurück.
+    """
+    def __init__(self, parent, title: str, message: str, button_1_text: str, button_2_text: str):
+        super().__init__(parent)
+
+        self.title(title)
+        self.geometry("400x200")
+        self.transient(parent)  # Immer im Vordergrund des Hauptfensters
+        self.grab_set()         # Macht den Dialog modal (blockiert Interaktion mit dem Hauptfenster)
+        self.protocol("WM_DELETE_WINDOW", self._on_closing) # Handle Klick auf 'X'
+
+        self._choice = None # Variable zur Speicherung der Benutzerauswahl
+
+        # Layout-Konfiguration
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+
+        main_frame = ctk.CTkFrame(self)
+        main_frame.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
+        main_frame.grid_columnconfigure((0, 1), weight=1)
+        main_frame.grid_rowconfigure(0, weight=1)
+        # Nachricht an den Benutzer
+        label = ctk.CTkLabel(main_frame, text=message, wraplength=340, justify="left", font=ctk.CTkFont(size=14), text_color="red", fg_color="white")
+        label.grid(row=0, column=0, columnspan=4, padx=20, pady=(20, 10), sticky="ew")
+
+        # Erster Button
+        button1 = ctk.CTkButton(main_frame, text=button_1_text, command=lambda: self._set_choice_and_close(button_1_text))
+        button1.grid(row=1, column=0, padx=(20, 10), pady=(10, 20), sticky="ew")
+
+        # Zweiter Button
+        button2 = ctk.CTkButton(main_frame, text=button_2_text, command=lambda: self._set_choice_and_close(button_2_text))
+        button2.grid(row=1, column=1, padx=(10, 20), pady=(10, 20), sticky="ew")
+
+        self.after(100, self.lift) # Stellt sicher, dass der Dialog im Vordergrund ist
+
+    def _set_choice_and_close(self, choice: str):
+        """Speichert die Auswahl und schließt das Fenster."""
+        self._choice = choice
+        self.destroy()
+
+    def _on_closing(self):
+        """Wird aufgerufen, wenn das Fenster über 'X' geschlossen wird."""
+        self._choice = None
+        self.destroy()
+
+    def get_choice(self) -> Optional[str]:
+        """Gibt die Auswahl des Benutzers zurück, nachdem das Fenster geschlossen wurde."""
+        return self._choice
 
 class MergeView(ctk.CTkToplevel):
     def __init__(self, parent, local_data: Dict[str, Dict], remote_data: Dict[str, Dict], source_name: str,
@@ -322,7 +372,6 @@ class MergeView(ctk.CTkToplevel):
         for item_id, details in self.merge_items.items():
             status_text, color = status_map.get(details['status'], ("[Unbekannt]", "white"))
             item_data = details['local'] or details['remote']
-            print(item_data)
             sn = item_data['data'].get('start_nummer', 'N/A')
             rn = item_data['data'].get('round_number', 'N/A')
 
@@ -707,6 +756,15 @@ class MainApp(ctk.CTk):
                                 line = line.split(",")[0]
                                 run_time = float(line)
                                 print(f"Arduino Zeitmessung empfangen: {run_time}")
+                                try:
+                                    with open("run_times.json", "r") as f:
+                                        run_times = json.load(f)
+                                        run_times.append(run_time)
+                                    with open("run_times.json", "w") as f:
+                                        json.dump(run_times, f)
+                                except FileNotFoundError:
+                                    with open("run_times.json", "w") as f:
+                                        json.dump([], f)
                                 with self.data_lock:
                                     if not self.tree: continue
                                     children = self.tree.get_children("")
@@ -719,8 +777,7 @@ class MainApp(ctk.CTk):
                                                 break
                                     if target_item_id:
                                         current_item_data = self.data_items[target_item_id].get("data", {})
-                                        update_payload = {"renn_zeit": run_time,
-                                                          "timestamp_messung": datetime.datetime.now().isoformat()}
+                                        update_payload = {"renn_zeit": run_time}
                                         self.after(0, self.update_tree_item, target_item_id, update_payload)
                                         print(
                                             f"Arduino: Rennzeit {run_time} für Item {target_item_id} (Startnr: {current_item_data.get('start_nummer', 'N/A')}) gesetzt.")
@@ -957,9 +1014,6 @@ class MainApp(ctk.CTk):
                 port_frame.pack(side="left", fill="x", expand=True, padx=5)
                 widget = ctk.CTkComboBox(port_frame, values=self._get_available_ports())
                 widget.pack(side="left", fill="x", expand=True)
-                refresh_button = ctk.CTkButton(port_frame, text="🔄", width=30,
-                                               command=lambda: self.setup_settings_view(parent_frame))
-                refresh_button.pack(side="left", padx=(5, 0))
             elif key == "Runde":
                 widget = ctk.CTkComboBox(setting_frame, values=ROUND_NAMES)
             elif key == "Server Adresse (für API)":
@@ -1374,7 +1428,47 @@ class MainApp(ctk.CTk):
 
             return True
 
+    def _check_for_double_data(self):
+        x = 0
+        for item_id, details in self.data_items.items():
+            x += 1
+            payload = copy.deepcopy(details.get("data", {}))
+            y = 0
+            for item_id1, details1 in self.data_items.items():
+                y += 1
+                print(details1)
+                payload1 = copy.deepcopy(details1.get("data", {}))
+                if (x != y and payload.get("start_nummer") == payload1.get("start_nummer") and
+                        payload.get("round_number") == payload1.get("round_number") and details1.get("status", None) != "deleted" and details.get("status", None) != "deleted"):
+                    dialog_message = (f"!!!DOPPELTER EINTRAG GEFUNDEN!!!\n"
+                                      f"Startnummer: {payload.get('start_nummer')}\n"
+                                      f"Runde: {payload.get('round_number')}\n"
+                                      f"BEHEBE DIES UMGEHEND!")
+
+                    dialog = CustomTwoButtonDialog(parent=self,
+                                                   title="ACHTUNG: Doppelter Eintrag",
+                                                   message=dialog_message,
+                                                   button_1_text="Abrechen",
+                                                   button_2_text="Trotzdem Pushen")
+
+                    # Warten, bis der Benutzer eine Auswahl trifft und das Dialogfenster schließt
+                    self.wait_window(dialog)
+
+                    choice = dialog.get_choice()
+
+                    if choice == "Trotzdem Pushen":
+                        return True
+
+                    elif choice == "Abrechen":
+                        return False
+
+                    else:  # Der Benutzer hat das Fenster geschlossen, ohne einen Button zu klicken
+                        return False
+        return True
+
     def _collect_data_for_website_push(self) -> tuple[List[Dict[str, Any]], List[str], List[str]]:
+        if self._check_for_double_data() == False:
+            return False, "", ""
         data_for_website = []
         items_to_mark_synced_after_push = []
         items_to_delete_permanently_after_push = []
@@ -1408,6 +1502,8 @@ class MainApp(ctk.CTk):
     def initiate_push_to_website(self):
         self.create_internal_snapshot(snapshot_type="pre_push_backup", show_success_message=False)
         data_to_send, _, _ = self._collect_data_for_website_push()
+        if data_to_send == False:
+            return
         if not data_to_send:
             messagebox.showinfo("Push to Website",
                                 "Keine neuen oder geänderten Daten für den Push zur Website vorhanden.", parent=self)
@@ -1437,6 +1533,7 @@ class MainApp(ctk.CTk):
                                ids_successfully_deleted_on_server: List[str]):
         updated_count, deleted_count = 0, 0
         with self.data_lock:
+            # Markiert erfolgreich hochgeladene/aktualisierte Items als synchronisiert
             for item_id in ids_successfully_upserted_on_server:
                 if item_id in self.data_items:
                     details = self.data_items[item_id]
@@ -1445,17 +1542,18 @@ class MainApp(ctk.CTk):
                         details["original_data_snapshot"] = None
                         details["_synced_to_website"] = True
                         updated_count += 1
-            ids_to_remove_from_tree = []
+
+            # Löscht Items, die auf dem Server erfolgreich gelöscht wurden, permanent aus dem lokalen Speicher
             for item_id in ids_successfully_deleted_on_server:
                 if item_id in self.data_items:
                     del self.data_items[item_id]
-                    ids_to_remove_from_tree.append(item_id)
                     deleted_count += 1
 
+        # Aktualisiert die Anzeige, um die entfernten Items aus der Liste zu entfernen und sendet Updates an Clients
         self.refresh_treeview_display_fully()
         self.broadcast_data_update()
 
-        # After updating the view, ask the user if they want to pull
+        # Fragt den Benutzer nach dem Push, ob er die Daten neu laden möchte, um Konsistenz sicherzustellen
         self.after(100, self._ask_to_pull_after_push, all_success, updated_count, deleted_count)
 
     def _ask_to_pull_after_push(self, all_success, updated_count, deleted_count):
@@ -1476,77 +1574,6 @@ class MainApp(ctk.CTk):
 
         self._reenable_push_buttons()
 
-    def _force_push_task(self):
-        # Schritt 1: Backup der aktuellen Website-Daten (bleibt als Sicherheitsmaßnahme erhalten)
-        self.after(0, lambda: self.force_push_button.configure(text="Backup..."))
-        api_endpoint = self.settings_data.get('API Endpoint Website', 'N/A')
-        website_runs_url = api_endpoint + "raceruns/"
-
-        print("--- Zwangspush: Starte Backup der Website-Daten ---")
-        website_data_to_backup = self.get_data_website(website_runs_url)
-
-        if website_data_to_backup is None:
-            self.after(0, lambda: messagebox.showerror("Fehler",
-                                                       "Konnte keine Daten von der Website für das Backup abrufen. Zwangspush abgebrochen.",
-                                                       parent=self))
-            self.after(0, self._reenable_push_buttons)
-            return
-
-        try:
-            backup_filename = f"website_backup_{datetime.datetime.now().strftime('%Y-%m-%d_%H%M%S')}.json"
-            with open(backup_filename, 'w', encoding='utf-8') as f:
-                json.dump(website_data_to_backup, f, indent=4)
-            print(f"--- Zwangspush: Backup erfolgreich in '{backup_filename}' gespeichert. ---")
-        except Exception as e:
-            self.after(0, lambda: messagebox.showerror("Fehler",
-                                                       f"Konnte das Backup nicht speichern: {e}\nZwangspush abgebrochen.",
-                                                       parent=self))
-            self.after(0, self._reenable_push_buttons)
-            return
-
-        # Schritt 2: Alle Einträge auf der Website löschen
-        self.after(0, lambda: self.force_push_button.configure(text="Lösche alle..."))
-        server_item_ids = {str(item.get('id')) for item in website_data_to_backup if item.get('id')}
-
-        print(f"--- Zwangspush: Lösche {len(server_item_ids)} Einträge auf der Website. ---")
-        delete_errors = 0
-
-        for item_id_to_delete in server_item_ids:
-            delete_url = f"{api_endpoint}raceruns/{item_id_to_delete}/"
-            try:
-                response = requests.delete(delete_url, headers=self.headers)
-                if response.status_code not in [204, 404]:  # 204 No Content (Success), 404 Not Found (auch ok)
-                    response.raise_for_status()
-            except Exception as e:
-                print(f"Fehler beim Löschen von Item {item_id_to_delete} auf der Website: {e}")
-                delete_errors += 1
-
-        if delete_errors > 0:
-            print(
-                f"Warnung: {delete_errors} Fehler beim Löschen von Einträgen auf der Website. Fahre trotzdem mit dem Push fort.")
-
-        # Schritt 3: Alle lokalen, nicht gelöschten Einträge als NEUE Einträge pushen
-        self.after(0, lambda: self.force_push_button.configure(text="Pushe alle..."))
-
-        with self.data_lock:
-            items_to_push = []
-            for item_id, details in self.data_items.items():
-                if details.get("status") != STATUS_DELETED:
-                    payload = copy.deepcopy(details.get("data", {}))
-                    payload["app_item_id"] = item_id  # Lokale ID für Fehlersuche mitsenden
-                    payload['_action'] = 'upsert'
-                    items_to_push.append(payload)
-
-        print(f"--- Zwangspush: Pushe {len(items_to_push)} lokale Einträge zur Website. ---")
-        push_errors = 0
-        total_pushed = len(items_to_push)
-        for item_data in items_to_push:
-            success, _ = self.push_data_website(item_data)
-            if not success:
-                push_errors += 1
-
-        # Schritt 4: Finalisierung im Main-Thread
-        self.after(0, self._finalize_force_push, total_pushed, push_errors, delete_errors)
 
     def _finalize_force_push(self, total_pushed, push_errors, delete_errors):
         # Erfolgsmeldung anzeigen
@@ -1572,6 +1599,10 @@ class MainApp(ctk.CTk):
         threading.Thread(target=self._force_push_task, daemon=True).start()
 
     def _force_push_task(self):
+        if self._check_for_double_data() == False:
+            self.push_to_website_button.configure(state="enabled")
+            self.force_push_button.configure(state="enabled")
+            return
         # Schritt 1: Lade aktuelle Daten von der Website und zähle sie.
         api_endpoint = self.settings_data.get('API Endpoint Website', 'N/A')
         website_runs_url = api_endpoint + "raceruns/"
@@ -1637,8 +1668,13 @@ class MainApp(ctk.CTk):
         with self.data_lock:
             items_to_push = [copy.deepcopy(details.get("data", {})) for details in self.data_items.values() if
                              details.get("status") != STATUS_DELETED]
+            items_to_delete = [key for key, value in self.data_items.items() if
+                             value.get("status") == STATUS_DELETED]
             for item in items_to_push:
                 item['_action'] = 'upsert'
+            for item in items_to_delete:
+                self.data_items.pop(item)
+
 
         print(f"--- Zwangspush: Pushe {len(items_to_push)} lokale Einträge zur Website. ---")
         push_errors = 0
@@ -1763,7 +1799,7 @@ class MainApp(ctk.CTk):
             sn = data.get("start_nummer")
             rn = data.get("round_number")
             if sn and rn:
-                composite_key = f"{sn}-{rn}"
+                composite_key = item_id
                 local_data_for_merge[composite_key] = details
                 self.merge_local_map[composite_key] = item_id
 

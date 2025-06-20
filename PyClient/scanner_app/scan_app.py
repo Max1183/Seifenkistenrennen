@@ -9,8 +9,6 @@ import socket
 import queue
 import time
 
-HOST = '127.0.0.1'  # Default host, could be made configurable 192.168.2.105
-PORT = 65432
 message_to_server_queue = queue.Queue()
 received_message_queue = queue.Queue()  # For messages from server to this app's main thread
 
@@ -33,11 +31,6 @@ def receive_message_from_server_func(s: socket.socket):
                 return
 
             buffer += data_chunk.decode('utf-8')
-
-            # Process messages based on a simple heuristic: known prefixes.
-            # This is not perfectly robust for very large messages split across TCP packets
-            # if the prefix itself is split. A more robust protocol (e.g., length prefixing)
-            # would be better for production.
 
             # Continuously process buffer as long as known message prefixes are found
             processed_something = True
@@ -261,6 +254,9 @@ except ImportError:
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("blue")
 
+def read_from_scanner_device():
+    return None
+
 
 class ScannerApp(ctk.CTk):
     def __init__(self):
@@ -279,7 +275,8 @@ class ScannerApp(ctk.CTk):
         self._racer_names_lock = threading.Lock()  # If accessed by multiple threads, though UI updates are main thread
 
         self.settings_data = {
-            "Scanner Name": f"Scanner_{uuid.uuid4().hex[:4]}",
+            "HOST": '127.0.0.1',
+            "PORT": 65432,
             # "MainApp Host": HOST, # Could make HOST/PORT configurable here too
             # "MainApp Port": PORT,
         }
@@ -309,6 +306,8 @@ class ScannerApp(ctk.CTk):
             target=process_server_messages_func, args=(self,), daemon=True
         )
         self.server_message_processor_thread.start()
+        scan_thred = threading.Thread(target=self._real_scan_thread_target, daemon=True).start()
+
 
     def on_closing(self):
         print("ScannerApp schließt...")
@@ -506,13 +505,12 @@ class ScannerApp(ctk.CTk):
     def _on_scan_input_enter(self, event: Optional[tk.Event] = None):  # event can be None if called directly
         self._simulate_scan_from_input()
 
+
     def _real_scan_thread_target(self):  # Placeholder for actual scanner hardware integration
-        # This would run in a loop, trying to read from a scanner device
-        # For now, it does nothing.
         while True:
-            # scanned_data = read_from_actual_scanner_device() # Hypothetical function
-            # if scanned_data:
-            #    self._add_scan_to_log_locally(scanned_data) # Process in main thread via self.after
+            scanned_data = read_from_scanner_device() # Hypothetical function
+            if scanned_data:
+                self._add_scan_to_log_locally(scanned_data) # Process in main thread via self.after
             time.sleep(0.1)  # Check periodically
 
     def _simulate_scan_from_input(self):
