@@ -42,7 +42,7 @@ class RacerWriteSerializerTests(TestCase):
     def test_racer_write_serializer_invalid_team_id(self):
         data = {
             "first_name": "No", "last_name": "Team",
-            "soapbox_class": 'LJ', "team": 9999, "start_number": "W102"
+            "soapbox_class": 'LRJ', "team": 9999, "start_number": "W102"
         }
         serializer = RacerWriteSerializer(data=data)
         with self.assertRaises(DRFValidationError) as cm:
@@ -50,10 +50,10 @@ class RacerWriteSerializerTests(TestCase):
         self.assertIn('team', cm.exception.detail)
 
     def test_racer_write_serializer_duplicate_start_number(self):
-        Racer.objects.create(first_name="Ex", last_name="Num", soapbox_class='LS', start_number="W103")
+        Racer.objects.create(first_name="Ex", last_name="Num", soapbox_class='LRS', start_number="W103")
         data = {
             "first_name": "Dup", "last_name": "Num",
-            "soapbox_class": 'HS', "start_number": "W103"
+            "soapbox_class": 'HRS', "start_number": "W103"
         }
         serializer = RacerWriteSerializer(data=data)
         with self.assertRaises(DRFValidationError):

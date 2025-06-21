@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import ReactDOM from 'react-dom'; 
+import { useSearchParams } from 'react-router-dom';
+import ReactDOM from 'react-dom';
 import apiService from '../services/apiService';
-import type { RacerFromAPI, SoapboxClassOption } from '../types'; 
+import type { RacerFromAPI, SoapboxClassOption } from '../types';
 import {
   SOAPBOX_CLASS_DISPLAY_MAP,
   type SoapboxClassValue,
@@ -63,7 +64,7 @@ const RacerDetailModal: React.FC<RacerDetailModalProps> = ({ racer, isOpen, onCl
                     .map(runKey => {
                       const run = racer.races.find(r => r.run_type === runKey);
                       if (!run) {
-                        return null; 
+                        return null;
                       }
                       return (
                         <tr key={`${run.run_type}-${run.run_identifier}`}>
@@ -100,15 +101,26 @@ interface SoapboxOption {
 }
 
 const ResultsPage: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  
   const [allRacers, setAllRacers] = useState<RacerFromAPI[]>([]);
   const [filteredAndSortedRacers, setFilteredAndSortedRacers] = useState<RacerFromAPI[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  const [selectedClass, setSelectedClass] = useState<SoapboxClassValue | ''>('');
-  const [selectedTeam, setSelectedTeam] = useState<number | '' | typeof SOLO_RACER_FILTER_VALUE>('');
-  const [selectedSoapbox, setSelectedSoapbox] = useState<number | ''>('');
 
+  const [selectedClass, setSelectedClass] = useState<SoapboxClassValue | ''>(
+    () => (searchParams.get('class') as SoapboxClassValue) || ''
+  );
+  const [selectedTeam, setSelectedTeam] = useState<number | '' | typeof SOLO_RACER_FILTER_VALUE>(
+    () => {
+        const teamParam = searchParams.get('team');
+        if (teamParam === SOLO_RACER_FILTER_VALUE) return SOLO_RACER_FILTER_VALUE;
+        return teamParam ? Number(teamParam) : '';
+    }
+  );
+  const [selectedSoapbox, setSelectedSoapbox] = useState<number | ''>(
+    () => (searchParams.get('soapbox') ? Number(searchParams.get('soapbox')) : '')
+  );
 
   const [sortConfig, setSortConfig] = useState<{ key: SortableRacerKey; direction: 'ascending' | 'descending' }>({
     key: 'best_time_seconds',
@@ -181,6 +193,15 @@ const ResultsPage: React.FC = () => {
     };
     fetchRacersData();
   }, []); 
+
+  useEffect(() => {
+    const newSearchParams = new URLSearchParams();
+    if (selectedClass) newSearchParams.set('class', selectedClass);
+    if (selectedTeam) newSearchParams.set('team', String(selectedTeam));
+    if (selectedSoapbox) newSearchParams.set('soapbox', String(selectedSoapbox));
+    
+    setSearchParams(newSearchParams, { replace: true });
+  }, [selectedClass, selectedTeam, selectedSoapbox, setSearchParams]);
 
   useEffect(() => {
     let processedRacers = [...allRacers];

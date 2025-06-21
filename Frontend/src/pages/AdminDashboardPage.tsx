@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import useSessionState from '../hooks/useSessionState';
 import axios from 'axios';
 import ReactDOM from 'react-dom';
 import type { FormEvent, ChangeEvent } from 'react';
@@ -57,7 +58,7 @@ const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose, title, childre
 };
 
 const AdminDashboardPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<AdminTab>('teams');
+  const [activeTab, setActiveTab] = useSessionState<AdminTab>('adminActiveTab', 'teams');
 
   const [teams, setTeams] = useState<TeamFromAPI[]>([]);
   const [loadingTeams, setLoadingTeams] = useState(false);
