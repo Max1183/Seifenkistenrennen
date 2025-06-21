@@ -73,26 +73,26 @@ export interface RacerFromAPI {
   rank?: number;
 }
 
-export type SoapboxClassValue = 'LJ' | 'LS' | 'HJ' | 'HS' | 'XK' | 'VT' | 'UN';
+export type SoapboxClassValue = 'LRJ' | 'LRS' | 'HRJ' | 'HRS' | 'XKL' | 'VTR' | 'UNK';
 
 export const SOAPBOX_CLASS_VALUES = {
-  LUFTREIFEN_JUNIOR: 'LJ' as SoapboxClassValue,
-  LUFTREIFEN_SENIOR: 'LS' as SoapboxClassValue,
-  HARTREIFEN_JUNIOR: 'HJ' as SoapboxClassValue,
-  HARTREIFEN_SENIOR: 'HS' as SoapboxClassValue,
-  X_KLASSE: 'XK' as SoapboxClassValue,
-  VETERANEN: 'VT' as SoapboxClassValue,
-  UNKNOWN: 'UN' as SoapboxClassValue,
+  LUFTREIFEN_JUNIOR: 'LRJ' as SoapboxClassValue,
+  LUFTREIFEN_SENIOR: 'LRS' as SoapboxClassValue,
+  HARTREIFEN_JUNIOR: 'HRJ' as SoapboxClassValue,
+  HARTREIFEN_SENIOR: 'HRS' as SoapboxClassValue,
+  X_KLASSE: 'XKL' as SoapboxClassValue,
+  VETERANEN: 'VTR' as SoapboxClassValue,
+  UNKNOWN: 'UNK' as SoapboxClassValue,
 } as const;
 
 export const SOAPBOX_CLASS_DISPLAY_MAP: Record<SoapboxClassValue, string> = {
-  LJ: 'Luftreifen Junior',
-  LS: 'Luftreifen Senior',
-  HJ: 'Hartreifen Junior',
-  HS: 'Hartreifen Senior',
-  XK: 'X-Klasse',
-  VT: 'Veteranen',
-  UN: 'Unbekannt',
+  LRJ: 'Luftreifen Junior',
+  LRS: 'Luftreifen Senior',
+  HRJ: 'Hartreifen Junior',
+  HRS: 'Hartreifen Senior',
+  XKL: 'X-Klasse',
+  VTR: 'Veteranen',
+  UNK: 'Unbekannt',
 };
 
 export interface SoapboxClassOption {

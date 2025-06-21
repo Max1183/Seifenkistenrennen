@@ -27,7 +27,7 @@ class RacerAPITests(APITestsBase):
         self.unauthenticate()
         team_for_filter = Team.objects.create(name="FilterTeam")
         racer_in_filter_team = Racer.objects.create(
-            first_name="Filtered", last_name="Racer", team=team_for_filter, soapbox_class='HJ'
+            first_name="Filtered", last_name="Racer", team=team_for_filter, soapbox_class='HRJ'
         )
         url = reverse('racer-list')
         response = self.client.get(url, {'team': team_for_filter.id})
@@ -40,6 +40,6 @@ class RacerAPITests(APITestsBase):
         url = reverse('racer-list')
         response = self.client.get(url, {'soapbox_class': Racer.SoapboxClass.X_KLASSE.value})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(len(response.data) >= 1) # self.racer1 ist X_KLASSE
+        self.assertTrue(len(response.data) >= 1)
         for racer_data in response.data:
             self.assertEqual(racer_data['soapbox_class'], Racer.SoapboxClass.X_KLASSE.value)

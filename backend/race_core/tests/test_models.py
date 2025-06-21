@@ -50,10 +50,10 @@ class RacerModelTests(TestCase):
         self.assertEqual(self.racer.best_time_seconds, Decimal("39.900"))
 
     def test_racer_best_time_seconds_no_valid_runs(self):
-        racer_no_runs = Racer.objects.create(first_name="No", last_name="Runs", soapbox_class='LJ')
+        racer_no_runs = Racer.objects.create(first_name="No", last_name="Runs", soapbox_class='LRJ')
         self.assertIsNone(racer_no_runs.best_time_seconds)
 
-        racer_dq_runs = Racer.objects.create(first_name="DQ", last_name="Only", soapbox_class='LS')
+        racer_dq_runs = Racer.objects.create(first_name="DQ", last_name="Only", soapbox_class='LRS')
         RaceRun.objects.create(racer=racer_dq_runs, run_type='H1', run_identifier=1, disqualified=True)
         self.assertIsNone(racer_dq_runs.best_time_seconds)
 
@@ -62,7 +62,7 @@ class RacerModelTests(TestCase):
             Racer.objects.create(
                 first_name="Duplicate",
                 last_name="StartNr",
-                soapbox_class='VT',
+                soapbox_class='VTR',
                 start_number="95"  # Bereits von self.racer verwendet
             )
 
@@ -74,7 +74,7 @@ class RaceRunModelTests(TestCase):
         cls.racer = Racer.objects.create(
             first_name="Chick",
             last_name="Hicks",
-            soapbox_class='XK',
+            soapbox_class='XKL',
             team=cls.team,
             start_number="86"
         )

@@ -11,7 +11,7 @@ class APITestsBase(APITestCase):
         cls.team1 = Team.objects.create(name="API Base Team")
         cls.racer1 = Racer.objects.create(
             first_name="ApiBase", last_name="Racer", team=cls.team1,
-            soapbox_class='XK', start_number="API_B1"
+            soapbox_class='XKL', start_number="API_B1"
         )
         cls.racerun1 = RaceRun.objects.create(
             racer=cls.racer1, run_type='PR', run_identifier=1, time_in_seconds="70.000"

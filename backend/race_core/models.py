@@ -55,17 +55,17 @@ class Racer(models.Model):
 
 
     class SoapboxClass(models.TextChoices):
-        LUFTREIFEN_JUNIOR = 'LJ', _('Luftreifen Junior')
-        LUFTREIFEN_SENIOR = 'LS', _('Luftreifen Senior')
-        HARTREIFEN_JUNIOR = 'HJ', _('Hartreifen Junior')
-        HARTREIFEN_SENIOR = 'HS', _('Hartreifen Senior')
-        X_KLASSE = 'XK', _('X-Klasse')
-        VETERANEN = 'VT', _('Veteranen')
-        UNKNOWN = 'UN', _('Unknown')
+        LUFTREIFEN_JUNIOR = 'LRJ', _('Luftreifen Junior')
+        LUFTREIFEN_SENIOR = 'LRS', _('Luftreifen Senior')
+        HARTREIFEN_JUNIOR = 'HRJ', _('Hartreifen Junior')
+        HARTREIFEN_SENIOR = 'HRS', _('Hartreifen Senior')
+        X_KLASSE = 'XKL', _('X-Klasse')
+        VETERANEN = 'VTR', _('Veteranen')
+        UNKNOWN = 'UNK', _('Unknown')
 
     soapbox_class = models.CharField(
         _("Soapbox Class"),
-        max_length=2,
+        max_length=3,
         choices=SoapboxClass.choices,
         default=SoapboxClass.UNKNOWN,
         help_text=_("The class the racer is competing in."),

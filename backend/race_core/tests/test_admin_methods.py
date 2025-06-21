@@ -13,11 +13,11 @@ class AdminMethodTests(TestCase):
         cls.team1 = Team.objects.create(name="Admin Test Team")
         cls.racer1 = Racer.objects.create(
             first_name="AdminRacer", last_name="One", team=cls.team1,
-            soapbox_class='LJ', start_number="ADM1"
+            soapbox_class='LRJ', start_number="ADM1"
         )
         Racer.objects.create(
             first_name="AdminRacer", last_name="Two", team=cls.team1,
-            soapbox_class='LS', start_number="ADM2"
+            soapbox_class='LRS', start_number="ADM2"
         )
         cls.run1 = RaceRun.objects.create(racer=cls.racer1, run_type='H1', run_identifier=1, time_in_seconds="30.000")
         RaceRun.objects.create(racer=cls.racer1, run_type='H2', run_identifier=1, time_in_seconds="29.500")
@@ -30,7 +30,7 @@ class AdminMethodTests(TestCase):
         racer_admin = RacerAdmin(model=Racer, admin_site=self.site)
         self.assertEqual(racer_admin.best_time_display(self.racer1), "29.500s")
 
-        racer_no_time = Racer.objects.create(first_name="NoTime", last_name="Admin", soapbox_class='XK')
+        racer_no_time = Racer.objects.create(first_name="NoTime", last_name="Admin", soapbox_class='XKL')
         self.assertEqual(racer_admin.best_time_display(racer_no_time), "N/A")
 
     def test_racerun_admin_run_type_display(self):
