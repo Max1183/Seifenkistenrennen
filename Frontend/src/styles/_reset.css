@@ -1,0 +1,63 @@
+/* src/styles/_reset.css */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  font-size: var(--base-font-size);
+  -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-family-sans-serif);
+  line-height: var(--line-height-base);
+  color: var(--text-color);
+  background-color: var(--background-color);
+  overflow-x: hidden; /* Prevent horizontal scrollbars */
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+img, svg, video, canvas, audio, iframe, embed, object {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  color: inherit; /* Ensure buttons inherit text color by default */
+  padding: 0; /* Remove default padding */
+}
+
+input, textarea, select, button {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  /* color: inherit; Let specific component styles handle this if needed */
+}
+
+ul, ol {
+  list-style: none;
+}
+
+/* Improve focus visibility globally for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+  box-shadow: none; /* Remove any other shadows on focus */
+}

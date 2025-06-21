@@ -1,0 +1,313 @@
+/* src/styles/_layout.css */
+
+body.mobile-menu-open {
+  overflow: hidden; 
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; 
+}
+
+.app-header {
+  background-color: var(--content-background-color);
+  box-shadow: var(--box-shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-index-sticky);
+  height: var(--navbar-height);
+  display: flex;
+  align-items: center;
+}
+
+.app-header nav {
+  display: flex;
+  justify-content: space-between; 
+  align-items: center;
+  width: 100%; 
+  height: 100%;
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  height: 100%; 
+  flex-shrink: 0; 
+}
+
+.nav-logo a {
+  display: flex; 
+  align-items: center;
+  height: 100%; 
+  padding: 0 var(--spacing-sm); 
+}
+
+.nav-logo img {
+  display: block;
+  /* Sicherstellen, dass es die Navbar-Höhe nicht überschreitet, abzüglich Puffer */
+  max-height: calc(var(--navbar-height) - var(--spacing-md)); /* Etwas mehr Puffer */
+  width: auto;
+  object-fit: contain; 
+  transition: transform var(--transition-speed-normal) var(--transition-timing);
+}
+
+.nav-logo a:hover img {
+  transform: scale(1.05);
+}
+
+/* Desktop Navigation Links - Default Visible */
+.nav-links-desktop {
+  display: flex; 
+  align-items: center;
+  gap: var(--spacing-sm); 
+  margin-left: auto; 
+}
+
+.nav-links-desktop a,
+.nav-links-desktop .btn-logout {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-weight: 500;
+  color: var(--text-light-color);
+  text-decoration: none;
+  border-radius: var(--border-radius-sm);
+  transition: background-color var(--transition-speed-fast) var(--transition-timing),
+              color var(--transition-speed-fast) var(--transition-timing);
+  position: relative;
+  white-space: nowrap;
+}
+
+.nav-links-desktop a::after { 
+  content: '';
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%) scaleX(0);
+  width: 70%;
+  height: 2px;
+  background-color: var(--primary-color);
+  transition: transform var(--transition-speed-normal) var(--transition-timing);
+  transform-origin: center;
+}
+
+.nav-links-desktop a:hover,
+.nav-links-desktop a.active {
+  color: var(--primary-color);
+}
+.nav-links-desktop a:hover::after,
+.nav-links-desktop a.active::after {
+  transform: translateX(-50%) scaleX(1);
+}
+
+.nav-links-desktop .btn-logout {
+  background-color: transparent;
+  border: 1px solid var(--border-light-color);
+  color: var(--text-light-color);
+  margin-left: var(--spacing-md);
+}
+.nav-links-desktop .btn-logout:hover {
+  background-color: var(--primary-light-color);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+/* Mobile Navigation Toggle Button - Default Hidden */
+.mobile-nav-toggle {
+  display: none; 
+  font-size: 1.8rem; 
+  color: var(--heading-color);
+  background: none;
+  border: none;
+  padding: var(--spacing-sm);
+  z-index: calc(var(--z-index-offcanvas) + 1); 
+  cursor: pointer;
+  margin-left: var(--spacing-sm); /* Kleiner Abstand zum rechten Rand, wenn Desktop-Links weg sind */
+}
+
+/* Off-Canvas Mobile Navigation Menu */
+.nav-links-mobile {
+  position: fixed;
+  top: 0; 
+  right: 0;
+  bottom: 0;
+  width: min(80vw, 280px); /* Etwas schmaler für besseres Aussehen */
+  background-color: var(--content-background-color);
+  box-shadow: -5px 0px 15px rgba(0,0,0,0.15); /* Schatten nach links */
+  /* border-left: 1px solid var(--border-color); /* Kann durch Schatten ersetzt werden */
+  padding-top: 0; /* Padding wird durch Header/Close-Button gesteuert */
+  transform: translateX(100%);
+  transition: transform 0.3s var(--transition-timing); /* Explizite Timing-Funktion */
+  z-index: var(--z-index-offcanvas);
+  overflow-y: auto; 
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-links-mobile.open {
+  transform: translateX(0);
+}
+
+.nav-links-mobile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--border-light-color);
+  /* height: var(--navbar-height); /* Gleiche Höhe wie Haupt-Navbar */
+}
+
+.nav-links-mobile-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--heading-color);
+}
+
+.nav-links-mobile-close-btn {
+  font-size: 1.8rem;
+  font-weight: 300;
+  background: none;
+  border: none;
+  color: var(--text-light-color);
+  padding: var(--spacing-xs);
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--transition-speed-fast) var(--transition-timing), transform var(--transition-speed-fast) var(--transition-timing);
+}
+.nav-links-mobile-close-btn:hover {
+  color: var(--danger-color);
+  transform: rotate(90deg) scale(1.1);
+}
+
+.nav-links-mobile-list {
+  padding: var(--spacing-sm) 0;
+  flex-grow: 1; /* Nimmt verfügbaren Platz ein */
+}
+
+.nav-links-mobile-list a,
+.nav-links-mobile-list .btn-logout { /* .btn-logout hier spezifisch adressieren */
+  display: block; 
+  margin: 0; 
+  text-align: left;
+  padding: var(--spacing-md) var(--spacing-lg); 
+  /* border-bottom: 1px solid var(--border-light-color); /* Entfernt, da Trennung oft stört */
+  border-radius: 0; 
+  color: var(--text-color); 
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color var(--transition-speed-fast) var(--transition-timing), color var(--transition-speed-fast) var(--transition-timing);
+}
+.nav-links-mobile-list a:not(:last-child) { /* Optional: Border zwischen Items */
+    border-bottom: 1px solid var(--border-light-color);
+}
+
+
+.nav-links-mobile-list a:hover,
+.nav-links-mobile-list a.active {
+  background-color: var(--primary-light-color);
+  color: var(--primary-color);
+}
+.nav-links-mobile-list a.active {
+  font-weight: 600; /* Aktiven Link hervorheben */
+  /* Optional: Ein kleiner Indikator links */
+  /* position: relative; */
+}
+/*
+.nav-links-mobile-list a.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: var(--primary-color);
+}
+*/
+
+.nav-links-mobile-list .btn-logout {
+    display: block;
+    margin: var(--spacing-lg) var(--spacing-lg) var(--spacing-md); 
+    text-align: center; 
+    width: calc(100% - (2 * var(--spacing-lg))); 
+    border: 1px solid var(--border-light-color); 
+    color: var(--text-light-color);
+    background-color: transparent;
+    padding: var(--spacing-sm) var(--spacing-lg); /* Sicherstellen, dass Button-Padding greift */
+}
+.nav-links-mobile-list .btn-logout:hover {
+    background-color: var(--primary-light-color);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+/* Mobile Menu Overlay */
+.mobile-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(var(--heading-color-rgb), 0.4); /* Basierend auf Textfarbe für besseren Kontrast */
+  z-index: calc(var(--z-index-offcanvas) - 1); 
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s var(--transition-timing), 
+              visibility 0s linear 0.3s; /* Visibility nach Opacity-Transition */
+}
+.mobile-menu-overlay.open {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.3s var(--transition-timing), visibility 0s linear 0s;
+}
+
+
+/* Main Content */
+.app-main-content {
+  flex-grow: 1;
+  padding: var(--spacing-xl) 0;
+}
+
+.page-container {
+  background-color: var(--content-background-color);
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-lg); 
+  box-shadow: var(--box-shadow-md);
+}
+@media (min-width: var(--breakpoint-md)) { 
+  .page-container {
+    padding: var(--spacing-xl);
+  }
+}
+
+/* Footer */
+.app-footer {
+  background-color: var(--heading-color);
+  color: var(--background-color);
+  text-align: center;
+  padding: var(--spacing-lg) var(--spacing-md);
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  margin-top: auto; 
+}
+
+.app-footer .footer-links {
+  margin-bottom: var(--spacing-sm);
+}
+.app-footer .footer-links a {
+  color: var(--background-color);
+  margin: 0 var(--spacing-sm);
+  opacity: 0.8;
+  transition: opacity var(--transition-speed-normal) var(--transition-timing);
+}
+.app-footer .footer-links a:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .nav-links-desktop {
+    display: none !important; 
+  }
+  .mobile-nav-toggle {
+    display: block !important; 
+  }
+}

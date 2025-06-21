@@ -1,0 +1,76 @@
+@keyframes fadeInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Utility class for appearing list items (JS can set delay) */
+.list-item-appear {
+  opacity: 0; /* Start invisible */
+  animation: slideInFromLeft 0.5s var(--transition-timing) forwards;
+}
+
+.card-hover-effect {
+  transition: transform var(--transition-speed-normal) var(--transition-timing),
+              box-shadow var(--transition-speed-normal) var(--transition-timing);
+}
+.card-hover-effect:hover {
+  transform: translateY(-5px); /* More subtle scale */
+  box-shadow: var(--box-shadow-lg); /* Stronger shadow on hover */
+}
+
+/* General page transition intro */
+.page-enter-animation {
+  animation: fadeInFromBottom 0.5s var(--transition-timing) forwards;
+}
+
+/* Modal animations */
+.modal-enter .modal-content {
+  animation: fadeInFromBottom 0.3s var(--transition-timing) 0.1s backwards;
+}
+.modal-enter .modal-overlay {
+  animation: fadeIn var(--transition-speed-normal) ease-out;
+}
+.modal-exit .modal-content {
+  animation: fadeInFromBottom 0.3s var(--transition-timing) reverse forwards; /* Example exit */
+}
+.modal-exit .modal-overlay {
+  animation: fadeOut var(--transition-speed-normal) ease-out forwards;
+}

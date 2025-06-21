@@ -1,0 +1,75 @@
+/* src/styles/_admin.css */
+
+.admin-tabs {
+  display: flex;
+  margin-bottom: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-color);
+  overflow-x: auto; /* For many tabs on small screens */
+  overflow-y: hidden; /* Prevent vertical scroll on tabs */
+  -webkit-overflow-scrolling: touch; /* Smoother scrolling on iOS */
+}
+
+.admin-tabs .tab-button {
+  padding: var(--spacing-md) var(--spacing-lg);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-light-color);
+  background-color: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px; /* Overlaps the main border-bottom for active state */
+  white-space: nowrap;
+  transition: color var(--transition-speed-normal) var(--transition-timing),
+              border-color var(--transition-speed-normal) var(--transition-timing);
+}
+
+.admin-tabs .tab-button.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+}
+
+.admin-tabs .tab-button:hover:not(.active) {
+  color: var(--text-color);
+  background-color: var(--primary-light-color); /* Subtle hover */
+}
+
+.tab-content {
+  animation: fadeIn 0.4s var(--transition-timing) forwards;
+  padding-top: var(--spacing-md);
+}
+
+/* Styling for Admin Modals */
+.admin-modal-content .modal-body {
+  padding-top: var(--spacing-sm); 
+}
+
+.admin-modal-form .form-group {
+  margin-bottom: var(--spacing-md);
+}
+.admin-modal-form .form-actions {
+  margin-top: var(--spacing-lg);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+}
+
+/* Checkbox styling in admin forms */
+.admin-modal-form .form-group-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+.admin-modal-form .form-group-checkbox input[type="checkbox"] {
+  width: auto; 
+  height: auto; 
+  margin-right: var(--spacing-xs);
+  flex-shrink: 0;
+}
+.admin-modal-form .form-group-checkbox label {
+  margin-bottom: 0; 
+  font-weight: normal; 
+  user-select: none;
+  cursor: pointer;
+}

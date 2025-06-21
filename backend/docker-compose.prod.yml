@@ -1,0 +1,10 @@
+services:
+  web:
+    command: sh -c "gunicorn --workers 3 --bind 0.0.0.0:$PORT --access-logfile - backend.wsgi:application"
+    volumes:
+      - static_volume:/app/staticfiles_collected
+    ports:
+      - "${PORT}:${PORT}"
+    env_file:
+      - .env.prod
+    restart: always

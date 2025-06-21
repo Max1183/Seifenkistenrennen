@@ -1,73 +1,395 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import ReactDOM from 'react-dom'; 
+import apiService from '../services/apiService';
+import type { RacerFromAPI, SoapboxClassOption } from '../types'; 
+import {
+  SOAPBOX_CLASS_DISPLAY_MAP,
+  type SoapboxClassValue,
+  RACE_RUN_TYPE_DISPLAY_MAP,
+  type RaceRunTypeValue,
+  DISPLAYED_RUN_TYPES_ORDER
+} from '../types';
 
-// Dummy Daten, später durch API ersetzen
-interface Result {
-  id: number;
-  rank: number;
-  name: string;
-  team: string;
-  time: string;
+const parseTimeToSeconds = (time: string | null): number | null => {
+  if (!time || time === "N/A") return null;
+  const parsed = parseFloat(time);
+  return isNaN(parsed) ? null : parsed;
+};
+
+const formatSecondsToTime = (totalSeconds: number | null | undefined): string => {
+  if (totalSeconds === null || totalSeconds === undefined) return "N/A";
+  return totalSeconds.toFixed(3);
+};
+
+// Spezieller Wert für den Filter "Einzelstarter"
+const SOLO_RACER_FILTER_VALUE = 'SOLO_RACERS_FILTER';
+
+interface RacerDetailModalProps {
+  racer: RacerFromAPI | null;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-const MOCK_RESULTS: Result[] = [
-  { id: 1, rank: 1, name: 'Max Raser', team: 'Blitz-Flitzer', time: '00:45.123' },
-  { id: 2, rank: 2, name: 'Lisa Schnell', team: 'Turbo-Schnecken', time: '00:45.890' },
-  { id: 3, rank: 3, name: 'Tim Turbo', team: 'Die Düsenjäger', time: '00:46.500' },
-  { id: 4, rank: 4, name: 'Anna Kurve', team: 'Blitz-Flitzer', time: '00:47.110' },
-];
+const RacerDetailModal: React.FC<RacerDetailModalProps> = ({ racer, isOpen, onClose }) => {
+  const modalRoot = document.getElementById('modal-root');
 
+  const modalContent = (
+    <div className="modal-overlay modal-enter" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>{racer?.full_name} <span style={{fontSize: '1rem', color: 'var(--text-light-color)'}}>(#{racer?.start_number || 'N/A'})</span></h2>
+          <button className="modal-close-button" onClick={onClose} aria-label="Schließen">×</button>
+        </div>
+        <div className="modal-body">
+          <p><strong>Team:</strong> {racer?.team_name || 'Einzelstarter'}</p>
+          <p><strong>Seifenkiste:</strong> {racer?.soapbox_name || '-'}</p>
+          <p><strong>Klasse:</strong> {racer?.soapbox_class_display}</p>
+          <p><strong>Beste Zeit:</strong> <span style={{fontWeight: 'bold'}}>{formatSecondsToTime(parseTimeToSeconds(racer?.best_time_seconds || null))}s</span></p>
+          {racer?.rank && <p><strong>Platz (Gesamt):</strong> {racer.rank}</p>}
+
+          <h3>Alle Läufe:</h3>
+          {racer?.races && racer.races.length > 0 ? (
+            <div className="table-wrapper">
+              <table className="results-table compact-table">
+                <thead>
+                  <tr>
+                    <th>Lauf</th>
+                    <th>Zeit (s)</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {DISPLAYED_RUN_TYPES_ORDER
+                    .map(runKey => {
+                      const run = racer.races.find(r => r.run_type === runKey);
+                      if (!run) {
+                        return null; 
+                      }
+                      return (
+                        <tr key={`${run.run_type}-${run.run_identifier}`}>
+                          <td>{run.run_type_display} {run.run_identifier > 1 ? run.run_identifier : ''}</td>
+                          <td>{run.disqualified ? 'DQ' : formatSecondsToTime(parseTimeToSeconds(run.time_in_seconds))}</td>
+                          <td>{run.disqualified ? <span style={{color: 'var(--danger-color)'}}>DQ</span> : (run.time_in_seconds ? 'OK' : 'N/A')}</td>
+                        </tr>
+                      );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : <p>Keine Rennläufe erfasst.</p>}
+        </div>
+      </div>
+    </div>
+  );
+
+  if (!isOpen || !racer || !modalRoot) return null;
+
+  return ReactDOM.createPortal(modalContent, modalRoot);
+};
+
+type SortableRacerKey = keyof Pick<RacerFromAPI, 'full_name' | 'team_name' | 'soapbox_name' | 'soapbox_class_display' | 'best_time_seconds' | 'rank'> | `time_${RaceRunTypeValue}`;
+
+interface TeamOption {
+    value: number | '' | typeof SOLO_RACER_FILTER_VALUE; // Team ID, leer für "Alle", oder spezieller String
+    label: string;
+}
+
+interface SoapboxOption {
+    value: number;
+    label: string;
+}
 
 const ResultsPage: React.FC = () => {
-  const [results, setResults] = useState<Result[]>([]);
+  const [allRacers, setAllRacers] = useState<RacerFromAPI[]>([]);
+  const [filteredAndSortedRacers, setFilteredAndSortedRacers] = useState<RacerFromAPI[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const [selectedClass, setSelectedClass] = useState<SoapboxClassValue | ''>('');
+  const [selectedTeam, setSelectedTeam] = useState<number | '' | typeof SOLO_RACER_FILTER_VALUE>('');
+  const [selectedSoapbox, setSelectedSoapbox] = useState<number | ''>('');
 
-  useEffect(() => {
-    // Simuliere API-Aufruf
-    setTimeout(() => {
-      setResults(MOCK_RESULTS);
-      setLoading(false);
-    }, 1000); // Simuliere eine Ladezeit
+
+  const [sortConfig, setSortConfig] = useState<{ key: SortableRacerKey; direction: 'ascending' | 'descending' }>({
+    key: 'best_time_seconds',
+    direction: 'ascending',
+  });
+  const [selectedRacer, setSelectedRacer] = useState<RacerFromAPI | null>(null);
+
+  const soapboxClassOptions: SoapboxClassOption[] = useMemo(() => {
+    return Object.entries(SOAPBOX_CLASS_DISPLAY_MAP).map(([value, label]) => ({
+        value: value as SoapboxClassValue,
+        label
+    })).sort((a,b) => a.label.localeCompare(b.label));
   }, []);
 
-  if (loading) {
-    return (
-      <div className="page-container">
-        <h1>Rennergebnisse</h1>
-        <p>Ergebnisse werden geladen...</p>
-        {/* Hier könnte ein schönerer Ladeindikator (Spinner) hin */}
-      </div>
-    );
-  }
+  const teamOptions: TeamOption[] = useMemo(() => {
+    if (!allRacers.length) return [];
+    const teamsMap = new Map<number, string>();
+    let hasSoloRacers = false;
+    allRacers.forEach(racer => {
+        if (racer.team && racer.team_name) {
+            teamsMap.set(racer.team, racer.team_name);
+        } else if (racer.team === null) {
+            hasSoloRacers = true;
+        }
+    });
+    
+    const options: TeamOption[] = Array.from(teamsMap.entries()).map(([id, name]) => ({
+        value: id,
+        label: name
+    }));
+
+    if (hasSoloRacers) {
+        options.push({ value: SOLO_RACER_FILTER_VALUE, label: 'Einzelstarter' });
+    }
+    
+    return options.sort((a, b) => {
+        if (a.value === SOLO_RACER_FILTER_VALUE) return 1;
+        if (b.value === SOLO_RACER_FILTER_VALUE) return -1;
+        return a.label.localeCompare(b.label);
+    });
+  }, [allRacers]);
+
+  const soapboxOptions: SoapboxOption[] = useMemo(() => {
+    if (!allRacers.length) return [];
+    const soapboxesMap = new Map<number, string>();
+    allRacers.forEach(racer => {
+        if (racer.soapbox && racer.soapbox_name) {
+            soapboxesMap.set(racer.soapbox, racer.soapbox_name);
+        }
+    });
+    return Array.from(soapboxesMap.entries())
+        .map(([id, name]) => ({ value: id, label: name }))
+        .sort((a, b) => a.label.localeCompare(b.label));
+  }, [allRacers]);
+
+
+  useEffect(() => {
+    const fetchRacersData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await apiService.getRacers(); 
+        setAllRacers(data);
+      } catch (err) {
+        console.error("Failed to fetch racers data:", err);
+        setError("Teilnehmerdaten konnten nicht geladen werden.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRacersData();
+  }, []); 
+
+  useEffect(() => {
+    let processedRacers = [...allRacers];
+
+    if (selectedClass) {
+        processedRacers = processedRacers.filter(r => r.soapbox_class === selectedClass);
+    }
+
+    if (selectedTeam === SOLO_RACER_FILTER_VALUE) {
+        processedRacers = processedRacers.filter(r => r.team === null);
+    } else if (selectedTeam !== '') { 
+        processedRacers = processedRacers.filter(r => r.team === selectedTeam);
+    }
+
+    if (selectedSoapbox !== '') {
+        processedRacers = processedRacers.filter(r => r.soapbox === selectedSoapbox);
+    }
+
+    const rankedRacers = processedRacers
+        .filter(r => parseTimeToSeconds(r.best_time_seconds) !== null)
+        .sort((a, b) => (parseTimeToSeconds(a.best_time_seconds) ?? Infinity) - (parseTimeToSeconds(b.best_time_seconds) ?? Infinity))
+        .map((r, index) => ({ ...r, rank: index + 1 }));
+
+    const unrankedRacers = processedRacers.filter(r => parseTimeToSeconds(r.best_time_seconds) === null).map(r => ({ ...r, rank: undefined }));
+    
+    processedRacers = [...rankedRacers, ...unrankedRacers];
+
+    processedRacers.sort((a, b) => {
+      let valA: string | number | null | undefined;
+      let valB: string | number | null | undefined;
+
+      if (sortConfig.key.startsWith('time_')) {
+        const runType = sortConfig.key.substring(5) as RaceRunTypeValue;
+        const getRunTime = (racer: RacerFromAPI) => {
+          const run = racer.races.find(race => race.run_type === runType && !race.disqualified);
+          return run ? parseTimeToSeconds(run.time_in_seconds) : null;
+        };
+        valA = getRunTime(a);
+        valB = getRunTime(b);
+      } else {
+        const key = sortConfig.key as keyof RacerFromAPI; 
+        const valueA = a[key];
+        const valueB = b[key];
+        valA = Array.isArray(valueA) ? undefined : valueA;
+        valB = Array.isArray(valueB) ? undefined : valueB;
+
+        if (sortConfig.key === 'best_time_seconds') {
+            valA = parseTimeToSeconds(a.best_time_seconds);
+            valB = parseTimeToSeconds(b.best_time_seconds);
+        } else if (sortConfig.key === 'rank') { 
+            valA = a.rank;
+            valB = b.rank;
+        }
+      }
+      
+      const isAsc = sortConfig.direction === 'ascending';
+      if (valA === null || valA === undefined) return (valB === null || valB === undefined) ? 0 : (isAsc ? 1 : -1);
+      if (valB === null || valB === undefined) return isAsc ? -1 : 1;
+
+
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        return isAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      }
+      if (typeof valA === 'number' && typeof valB === 'number') {
+        return isAsc ? valA - valB : valB - valA;
+      }
+      return 0;
+    });
+    setFilteredAndSortedRacers(processedRacers);
+  }, [allRacers, selectedClass, selectedTeam, selectedSoapbox, sortConfig]);
+
+  const requestSort = useCallback((key: SortableRacerKey) => {
+    setSortConfig(prevConfig => ({
+      key,
+      direction: prevConfig.key === key && prevConfig.direction === 'ascending' ? 'descending' : 'ascending',
+    }));
+  }, []);
+
+  const getSortIndicator = useCallback((key: SortableRacerKey) => {
+    if (sortConfig.key === key) {
+      return sortConfig.direction === 'ascending' ? '▲' : '▼';
+    }
+    return '';
+  }, [sortConfig]);
+
+  const getRaceTimeForTable = useCallback((racer: RacerFromAPI, runType: RaceRunTypeValue, runIdentifier: number = 1) => {
+    const raceRun = racer.races.find(r => r.run_type === runType && r.run_identifier === runIdentifier);
+    if (!raceRun) return 'N/A';
+    if (raceRun.disqualified) return <span style={{color: 'var(--danger-color)', fontWeight: 'bold'}}>DQ</span>;
+    return formatSecondsToTime(parseTimeToSeconds(raceRun.time_in_seconds));
+  }, []);
+
+  const handleTeamChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    if (value === '') {
+        setSelectedTeam('');
+    } else if (value === SOLO_RACER_FILTER_VALUE) {
+        setSelectedTeam(SOLO_RACER_FILTER_VALUE);
+    } else {
+        setSelectedTeam(Number(value));
+    }
+  };
+
+  if (loading) return <div className="page-container results-loading"><p>Lade Rennergebnisse...</p></div>;
+  if (error) return <div className="page-container results-error-message"><p>Fehler: {error}</p></div>;
 
   return (
-    <div className="page-container">
+    <div className="results-page page-enter-animation">
       <h1>Rennergebnisse</h1>
-      <p>Die aktuellen Ergebnisse des Seifenkistenrennens.</p>
-
-      {results.length > 0 ? (
-        <table className="results-table">
-          <thead>
-            <tr>
-              <th>Platz</th>
-              <th>Name</th>
-              <th>Team</th>
-              <th>Zeit</th>
-            </tr>
-          </thead>
-          <tbody>
-            {results.map((result, index) => (
-              <tr key={result.id} className="list-item-appear" style={{ animationDelay: `${index * 0.05}s` }}>
-                <td>{result.rank}</td>
-                <td>{result.name}</td>
-                <td>{result.team}</td>
-                <td>{result.time}</td>
-              </tr>
+      <div className="filters-container">
+        <div className="filter-group">
+            <label htmlFor="classFilter">Klasse filtern:</label>
+            <select
+            id="classFilter"
+            className="form-control"
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value as SoapboxClassValue | '')}
+            >
+            <option value="">Alle Klassen</option>
+            {soapboxClassOptions.map(sc => (
+                <option key={sc.value} value={sc.value}>{sc.label}</option>
             ))}
-          </tbody>
-        </table>
+            </select>
+        </div>
+        <div className="filter-group">
+            <label htmlFor="teamFilter">Team filtern:</label>
+            <select
+            id="teamFilter"
+            className="form-control"
+            value={selectedTeam}
+            onChange={handleTeamChange}
+            >
+            <option value="">Alle Teams</option>
+            {teamOptions.map(team => (
+                <option key={team.value.toString()} value={team.value}>{team.label}</option>
+            ))}
+            </select>
+        </div>
+        <div className="filter-group">
+            <label htmlFor="soapboxFilter">Seifenkiste filtern:</label>
+            <select
+            id="soapboxFilter"
+            className="form-control"
+            value={selectedSoapbox}
+            onChange={(e) => setSelectedSoapbox(e.target.value ? Number(e.target.value) : '')}
+            >
+            <option value="">Alle Seifenkisten</option>
+            {soapboxOptions.map(sb => (
+                <option key={sb.value} value={sb.value}>{sb.label}</option>
+            ))}
+            </select>
+        </div>
+      </div>
+
+      {filteredAndSortedRacers.length > 0 ? (
+        <div className="table-wrapper">
+          <table className="results-table">
+            <thead>
+              <tr>
+                <th onClick={() => requestSort('rank')} className="sortable-header">
+                  Platz <span className="sort-indicator">{getSortIndicator('rank')}</span>
+                </th>
+                <th onClick={() => requestSort('full_name')} className="sortable-header">
+                  Name <span className="sort-indicator">{getSortIndicator('full_name')}</span>
+                </th>
+                <th onClick={() => requestSort('team_name')} className="sortable-header">
+                  Team <span className="sort-indicator">{getSortIndicator('team_name')}</span>
+                </th>
+                <th onClick={() => requestSort('soapbox_name')} className="sortable-header">
+                  Seifenkiste <span className="sort-indicator">{getSortIndicator('soapbox_name')}</span>
+                </th>
+                <th onClick={() => requestSort('soapbox_class_display')} className="sortable-header">
+                  Klasse <span className="sort-indicator">{getSortIndicator('soapbox_class_display')}</span>
+                </th>
+                {DISPLAYED_RUN_TYPES_ORDER.map((runTypeKey) => (
+                  <th key={runTypeKey} onClick={() => requestSort(`time_${runTypeKey}`)} className="sortable-header">
+                    {RACE_RUN_TYPE_DISPLAY_MAP[runTypeKey]}
+                    <span className="sort-indicator">{getSortIndicator(`time_${runTypeKey}`)}</span>
+                  </th>
+                ))}
+                <th onClick={() => requestSort('best_time_seconds')} className="sortable-header">
+                  Beste Zeit <span className="sort-indicator">{getSortIndicator('best_time_seconds')}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAndSortedRacers.map((racer) => (
+                <tr key={racer.id} onClick={() => setSelectedRacer(racer)} className="clickable-row">
+                  <td style={{textAlign: 'center'}}>{racer.rank || '-'}</td>
+                  <td>{racer.full_name}</td>
+                  <td>{racer.team_name || 'Einzelstarter'}</td>
+                  <td>{racer.soapbox_name || '-'}</td>
+                  <td>{racer.soapbox_class_display}</td>
+                  {DISPLAYED_RUN_TYPES_ORDER.map(runKey => (
+                    <td key={`${racer.id}-${runKey}`}>{getRaceTimeForTable(racer, runKey, 1)}</td>
+                  ))}
+                  <td style={{fontWeight: 'bold'}}>{formatSecondsToTime(parseTimeToSeconds(racer.best_time_seconds))}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
-        <p>Noch keine Ergebnisse vorhanden.</p>
+        <p style={{marginTop: 'var(--spacing-lg)'}}>
+            {allRacers.length === 0 && !loading ? 'Es wurden noch keine Daten geladen oder es sind keine Daten vorhanden.' : 
+             !loading ? 'Keine Teilnehmer für die ausgewählten Filter gefunden.' : ''}
+        </p>
       )}
+      <RacerDetailModal racer={selectedRacer} isOpen={!!selectedRacer} onClose={() => setSelectedRacer(null)} />
     </div>
   );
 };
