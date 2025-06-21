@@ -1,4 +1,5 @@
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
@@ -11,6 +12,8 @@ if os.environ.get("DOCKER_CONTAINER") != "True":
         load_dotenv(dotenv_path=dotenv_path)
     else:
         print(f"WARNUNG: Lokale Entwicklungs-Env-Datei nicht gefunden unter {dotenv_path}")
+
+IS_COLLECTSTATIC = 'collectstatic' in sys.argv
 
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
@@ -132,8 +135,12 @@ SIMPLE_JWT = {
 }
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL")
-CORS_ALLOWED_ORIGINS = [FRONTEND_URL] if FRONTEND_URL else []
-CSRF_TRUSTED_ORIGINS = [FRONTEND_URL] if FRONTEND_URL else []
+if FRONTEND_URL and not IS_COLLECTSTATIC:
+    CORS_ALLOWED_ORIGINS = [FRONTEND_URL]
+    CSRF_TRUSTED_ORIGINS = [FRONTEND_URL]
+else:
+    CORS_ALLOWED_ORIGINS = []
+    CSRF_TRUSTED_ORIGINS = []
 CORS_ALLOWS_CREDENTIALS = True
 
 if DEBUG:
