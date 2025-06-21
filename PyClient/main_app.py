@@ -18,7 +18,7 @@ import serial.tools.list_ports
 HOST = '0.0.0.0'
 PORT = 65432
 SETTINGS_FILE = "app_settings.json"
-VERSIONS_FILE = "versions.json"
+VERSIONS_FILE = "main_app/versions.json"
 
 
 # Die Hilfsfunktionen (handle_client, send_to_client_from_queue, connect, message_receive)
@@ -757,13 +757,13 @@ class MainApp(ctk.CTk):
                                 run_time = float(line)
                                 print(f"Arduino Zeitmessung empfangen: {run_time}")
                                 try:
-                                    with open("run_times.json", "r") as f:
+                                    with open("main_app/run_times.json", "r") as f:
                                         run_times = json.load(f)
                                         run_times.append(run_time)
-                                    with open("run_times.json", "w") as f:
+                                    with open("main_app/run_times.json", "w") as f:
                                         json.dump(run_times, f)
                                 except FileNotFoundError:
-                                    with open("run_times.json", "w") as f:
+                                    with open("main_app/run_times.json", "w") as f:
                                         json.dump([], f)
                                 with self.data_lock:
                                     if not self.tree: continue
@@ -2148,10 +2148,10 @@ class MainApp(ctk.CTk):
 
 
 if __name__ == "__main__":
-    if not os.path.exists("common"): os.makedirs("common")
-    if not os.path.exists("common/__init__.py"): open("common/__init__.py", "w").close()
-    if not os.path.exists("common/constants.py"):
-        with open("common/constants.py", "w", encoding='utf-8') as f:
+    if not os.path.exists("main_app/common"): os.makedirs("main_app/common")
+    if not os.path.exists("main_app/common/__init__.py"): open("main_app/common/__init__.py", "w").close()
+    if not os.path.exists("main_app/common/constants.py"):
+        with open("main_app/common/constants.py", "w", encoding='utf-8') as f:
             f.write("""
 STATUS_NEW = 'new'
 STATUS_MODIFIED = 'modified'
@@ -2166,8 +2166,8 @@ COLOR_STATUS_COMPLETE_BG = '#bbdefb'
 COLOR_STATUS_SYNCED_LOCAL_BG = '#cfd8dc'
 ROUND_NAMES = ["PR", "H1", "H2"]
 """)
-    if not os.path.exists("common/data_models.py"):
-        with open("common/data_models.py", "w", encoding='utf-8') as f:
+    if not os.path.exists("main_app/common/data_models.py"):
+        with open("main_app/common/data_models.py", "w", encoding='utf-8') as f:
             f.write("""
 import datetime
 import uuid

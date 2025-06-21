@@ -8,7 +8,10 @@ from typing import Dict, Any, Optional, List
 import socket
 import queue
 import time
+from pynput import keyboard
 
+HOST = '127.0.0.1'  # Default host, could be made configurable 192.168.2.105
+PORT = 65432
 message_to_server_queue = queue.Queue()
 received_message_queue = queue.Queue()  # For messages from server to this app's main thread
 
@@ -254,8 +257,74 @@ except ImportError:
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("blue")
 
+def get_scan():
+    """
+    Wartet auf einen einzelnen Scan von einem Barcode-Scanner und gibt das Ergebnis zurück.
+
+    Diese Funktion unterscheidet zwischen schnellen Scannereingaben und langsamen,
+    manuellen Tastatureingaben. Nur die schnellen Eingaben, die mit "Enter"
+    abgeschlossen werden, werden als gültiger Scan betrachtet.
+
+    :return: Den gescannten Code als String.
+    """
+    # --- Konfiguration ---
+    # Zeit in Sekunden. Wenn die Zeit zwischen zwei Tastenanschlägen größer ist,
+    # wird die Eingabe als "manuell" verworfen und der Puffer geleert.
+    INPUT_TIMEOUT = 0.05  # 50 Millisekunden
+
+    data_queue = queue.Queue()
+    state = {'buffer': [], 'last_key_time': 0}
+    listener_ref = [None]  # Referenz, um den Listener von innen stoppen zu können
+
+    def on_press(key):
+        """Wird bei jedem Tastenanschlag im Hintergrund aufgerufen."""
+        current_time = time.time()
+
+        # Timeout-Logik: Ist die Pause seit der letzten Taste zu lang?
+        if current_time - state['last_key_time'] > INPUT_TIMEOUT:
+            state['buffer'] = []  # Ja, also Puffer leeren (manuelle Eingabe)
+
+        state['last_key_time'] = current_time
+
+        try:
+            # Füge das Zeichen dem Puffer hinzu
+            if key.char:
+                state['buffer'].append(key.char)
+        except AttributeError:
+            # Es ist eine Sondertaste (kein .char Attribut)
+            if key == keyboard.Key.enter:
+                # Enter beendet die Eingabe
+                if state['buffer']:
+                    scanned_data = "".join(state['buffer'])
+                    data_queue.put(scanned_data)  # Ergebnis in die Queue legen
+                    # Den Listener stoppen, da wir unseren Scan haben
+                    if listener_ref[0]:
+                        listener_ref[0].stop()
+
+    # Listener erstellen und starten
+    listener = keyboard.Listener(on_press=on_press)
+    listener_ref[0] = listener  # Referenz speichern
+    listener.start()
+
+    print("Scanner ist bereit. Bitte scannen Sie jetzt...")
+
+    # Warten, bis der Listener ein Ergebnis in die Queue gelegt hat.
+    # .get() blockiert das Programm, bis ein Element verfügbar ist.
+    result = data_queue.get()
+
+    # Sicherstellen, dass der Listener-Thread sauber beendet wurde
+    listener.join()
+    return result
+
+
 def read_from_scanner_device():
-    return None
+    while True:
+        data = get_scan()
+        try:
+            int(data)
+            return data
+        except Exception:
+            continue
 
 
 class ScannerApp(ctk.CTk):
@@ -275,8 +344,7 @@ class ScannerApp(ctk.CTk):
         self._racer_names_lock = threading.Lock()  # If accessed by multiple threads, though UI updates are main thread
 
         self.settings_data = {
-            "HOST": '127.0.0.1',
-            "PORT": 65432,
+            "Scanner Name": f"Scanner_{uuid.uuid4().hex[:4]}",
             # "MainApp Host": HOST, # Could make HOST/PORT configurable here too
             # "MainApp Port": PORT,
         }
@@ -300,14 +368,13 @@ class ScannerApp(ctk.CTk):
         self.tab_view.set("Scan-Protokoll")  # Default tab
 
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
+        threading.Thread(target=self._real_scan_thread_target, daemon=True).start()
 
         # Start the thread that processes messages from the server queue
         self.server_message_processor_thread = threading.Thread(
             target=process_server_messages_func, args=(self,), daemon=True
         )
         self.server_message_processor_thread.start()
-        scan_thred = threading.Thread(target=self._real_scan_thread_target, daemon=True).start()
-
 
     def on_closing(self):
         print("ScannerApp schließt...")
@@ -718,16 +785,16 @@ if __name__ == "__main__":
     import os
 
     # Ensure common directory and files exist for standalone execution (basic setup)
-    if not os.path.exists("common"): os.makedirs("common")
-    if not os.path.exists("common/__init__.py"): open("common/__init__.py", "w").close()
-    if not os.path.exists("common/constants.py"):
-        with open("common/constants.py", "w") as f:
+    if not os.path.exists("scanner_app/common"): os.makedirs("scanner_app/common")
+    if not os.path.exists("scanner_app/common/__init__.py"): open("scanner_app/common/__init__.py", "w").close()
+    if not os.path.exists("scanner_app/common/constants.py"):
+        with open("scanner_app/common/constants.py", "w") as f:
             f.write("STATUS_NEW = 'new'\nSTATUS_MODIFIED = 'modified'\nSTATUS_DELETED = 'deleted'\n"
                     "STATUS_SYNCED = 'synced'\nSTATUS_COMPLETE = 'complete'\n"
                     "COLOR_STATUS_NEW_BG = '#c8e6c9'\nCOLOR_STATUS_MODIFIED_BG = '#fff9c4'\n"
                     "COLOR_STATUS_DELETED_FG = '#e57373'\nCOLOR_STATUS_COMPLETE_BG = '#bbdefb'\n")
-    if not os.path.exists("common/data_models.py"):
-        with open("common/data_models.py", "w") as f:
+    if not os.path.exists("scanner_app/common/data_models.py"):
+        with open("scanner_app/common/data_models.py", "w") as f:
             f.write("import datetime\nimport uuid\nfrom typing import Optional\n\n"
                     "class ScanLogEntry:\n"
                     "    def __init__(self, start_nummer: str, status: str, scan_id: Optional[str] = None, timestamp_scan_lokal: Optional[datetime.datetime] = None, error_message: Optional[str] = None):\n"
