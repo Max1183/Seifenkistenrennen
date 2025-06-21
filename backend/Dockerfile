@@ -1,7 +1,7 @@
 FROM python:3.13-slim-bookworm
 
-ENV PYTHONUNBUFFERED 1
-ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
@@ -24,8 +24,8 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 COPY . .
 
-EXPOSE 8000
+EXPOSE ${PORT}
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "backend.wsgi:application"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:$PORT backend.wsgi:application"]
